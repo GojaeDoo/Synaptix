@@ -1,0 +1,259 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:ital,opsz,wght@0,14..32,300..700;1,14..32,300..700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap');
+@import "tailwindcss";
+
+@theme {
+  --font-sans: 'Inter', ui-sans-serif, system-ui;
+  --font-pixel: 'Press Start 2P', monospace;
+
+  /* Backgrounds */
+  --color-bg:       #0F0F0F;
+  --color-card:     #1A1A1A;
+  --color-card-alt: #222222;
+  --color-sep:      #2A2A2A;
+
+  /* Accents — Toss blue 계열 */
+  --color-accent:        #3182F6;
+  --color-accent-hover:  #1f6fe0;
+  --color-accent-light:  #7BB7FF;
+  --color-accent-dim:    rgb(49 130 246 / 0.12);
+
+  /* Text hierarchy (T1 가장 진함 → T4 가장 옅음) */
+  --color-t1:    #F2F2F7;
+  --color-t1-dim:#C7C7CC;
+  --color-t2:    #AEAEB2;
+  --color-t3:    #8E8E93;
+  --color-t4:    #636366;
+  --color-t5:    #48484A;
+
+  /* Semantic */
+  --color-up:   #05D686;
+  --color-down: #FF453A;
+  --color-warn: #FF9F0A;
+}
+
+@layer base {
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  /* ── 키보드 포커스 ──────────────────────────────
+     Tailwind preflight가 기본 outline을 지우므로 :focus-visible로 복구.
+     focus는 마우스 클릭 시에는 안 보이고 키보드 탐색 시에만 표시. */
+  :focus-visible {
+    outline: 2px solid var(--color-accent);
+    outline-offset: 2px;
+    border-radius: 4px;
+  }
+
+  /* 사용자가 motion-reduce를 선호하면 transition/animation 줄임 */
+  @media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after {
+      animation-duration: 0.01ms !important;
+      animation-iteration-count: 1 !important;
+      transition-duration: 0.01ms !important;
+    }
+  }
+}
+
+html { height: 100%; }
+
+body {
+  background: #0F0F0F;
+  color: #F2F2F7;
+  font-family: 'Inter', ui-sans-serif, system-ui;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  font-variant-numeric: tabular-nums;
+  height: 100%;
+}
+
+#root { height: 100%; }
+
+/* ── Card ─────────────────────────────────────────
+   overflow:clip → border-radius 클리핑은 유지하되
+   내부 sticky/position이 부모에 갇히지 않음
+──────────────────────────────────────────────── */
+.card {
+  background: #1A1A1A;
+  border-radius: 16px;
+  /* overflow 없음 — 배경만 border-radius로 클리핑, content는 클리핑 안 함 */
+}
+
+/* ── Scrollbar ────────────────────────────────── */
+::-webkit-scrollbar { width: 4px; height: 4px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb {
+  background: #2A2A2A;
+  border-radius: 2px;
+}
+::-webkit-scrollbar-thumb:hover { background: #3A3A3A; }
+
+/* ── Skeleton ─────────────────────────────────── */
+@keyframes shimmer {
+  0%   { background-position: -400px 0; }
+  100% { background-position:  400px 0; }
+}
+.skeleton {
+  background: linear-gradient(
+    90deg,
+    #1E1E1E 25%,
+    #2A2A2A 50%,
+    #1E1E1E 75%
+  );
+  background-size: 800px 100%;
+  animation: shimmer 1.6s infinite;
+  border-radius: 6px;
+}
+
+/* ── Animations ──────────────────────────────── */
+@keyframes fadeUp {
+  from { opacity: 0; transform: translateY(8px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+.fade-up { animation: fadeUp 0.3s ease forwards; }
+
+/* ── Weather effects ─────────────────────────── */
+@keyframes weather-rain {
+  0%   { transform: translateY(-12px); opacity: 0; }
+  10%  { opacity: 0.75; }
+  90%  { opacity: 0.75; }
+  100% { transform: translateY(320px); opacity: 0; }
+}
+@keyframes weather-snow {
+  0%   { transform: translate(0, -8px); opacity: 0; }
+  10%  { opacity: 0.85; }
+  90%  { opacity: 0.85; }
+  100% { transform: translate(10px, 320px); opacity: 0; }
+}
+@keyframes weather-heat {
+  0%   { transform: translateY(0) translateX(0); opacity: 0; }
+  20%  { opacity: 0.7; }
+  100% { transform: translateY(-180px) translateX(6px); opacity: 0; }
+}
+@keyframes weather-twinkle {
+  0%, 100% { opacity: 0.15; transform: scale(1); }
+  50%      { opacity: 1;    transform: scale(1.4); }
+}
+
+/* ── Markets effect ──────────────────────────── */
+@keyframes market-scroll {
+  from { transform: translateX(0); }
+  to   { transform: translateX(-50%); }
+}
+
+/* ── Widget glass / 3D depth ─────────────────── */
+.widget-glass {
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.07),
+    0 1px 2px rgba(0, 0, 0, 0.18),
+    0 10px 28px rgba(0, 0, 0, 0.38);
+  transition:
+    transform 0.28s cubic-bezier(0.2, 0.8, 0.2, 1),
+    box-shadow 0.28s cubic-bezier(0.2, 0.8, 0.2, 1),
+    border-color 0.28s ease;
+}
+.widget-glass:hover {
+  transform: translateY(-3px);
+  border-color: rgba(255, 255, 255, 0.10);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.10),
+    0 4px 10px rgba(0, 0, 0, 0.28),
+    0 18px 44px rgba(49, 130, 246, 0.10),
+    0 18px 44px rgba(0, 0, 0, 0.45);
+}
+
+/* In edit mode the widget shouldn't lift on hover — RGL drag overlay
+   sits on top so hover doesn't reach the widget anyway, but be explicit */
+.rgl-editing .widget-glass:hover {
+  transform: none;
+}
+
+/* ── Terminal typing background ──────────────── */
+.terminal-panel {
+  font-family: 'JetBrains Mono', 'SF Mono', 'Menlo', 'Consolas', monospace;
+  font-size: 10px;
+  line-height: 1.6;
+  color: rgba(255, 255, 255, 0.10);
+  white-space: pre-wrap;
+  margin: 0;
+  letter-spacing: 0.01em;
+  user-select: none;
+  text-shadow: 0 0 12px rgba(49, 130, 246, 0.15);
+}
+@media (min-width: 640px) {
+  .terminal-panel { font-size: 12px; line-height: 1.65; }
+}
+
+.terminal-cursor {
+  display: inline-block;
+  margin-left: 2px;
+  color: rgba(49, 130, 246, 0.45);
+  animation: terminal-blink 1.05s steps(1) infinite;
+}
+
+@keyframes terminal-blink {
+  0%, 50%   { opacity: 1; }
+  50.01%, 100% { opacity: 0; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .terminal-cursor { animation: none; opacity: 0.5; }
+}
+
+
+/* ── iOS safe areas ───────────────────────────── */
+.safe-bottom { padding-bottom: env(safe-area-inset-bottom, 0px); }
+.safe-top    { padding-top:    env(safe-area-inset-top,    0px); }
+
+/* ── Tabular numbers ─────────────────────────── */
+.num { font-variant-numeric: tabular-nums; }
+
+/* ── React Grid Layout (dark theme) ───────────── */
+.react-grid-item.react-grid-placeholder {
+  background: rgba(49, 130, 246, 0.18) !important;
+  border: 1px dashed rgba(49, 130, 246, 0.55);
+  border-radius: 16px;
+  opacity: 1;
+}
+
+.react-grid-item > .react-resizable-handle {
+  opacity: 0;
+  transition: opacity 0.15s ease;
+}
+.rgl-editing .react-grid-item > .react-resizable-handle {
+  opacity: 1;
+  /* must sit ABOVE the drag overlay (z-20) so the user can grab it */
+  z-index: 25;
+  width: 24px;
+  height: 24px;
+}
+.react-grid-item > .react-resizable-handle::after {
+  border-right: 2px solid rgba(255, 255, 255, 0.55);
+  border-bottom: 2px solid rgba(255, 255, 255, 0.55);
+  width: 10px;
+  height: 10px;
+  right: 6px;
+  bottom: 6px;
+}
+.react-grid-item > .react-resizable-handle:hover::after {
+  border-color: #3182F6;
+  border-width: 3px;
+}
+
+/* While editing — slight wobble on the inner wrapper (NOT on the grid item itself,
+   since RGL uses transform on the grid item for positioning) */
+@keyframes rgl-wobble {
+  0%, 100% { transform: rotate(-0.4deg); }
+  50%      { transform: rotate(0.4deg); }
+}
+.rgl-editing .widget-edit-wobble {
+  animation: rgl-wobble 0.6s ease-in-out infinite;
+  transform-origin: center;
+}
+.rgl-editing .react-grid-item.react-draggable-dragging {
+  z-index: 30;
+  cursor: grabbing !important;
+}
+.rgl-editing .react-grid-item.react-draggable-dragging .widget-edit-wobble {
+  animation: none;
+}

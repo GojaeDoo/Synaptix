@@ -1,0 +1,84 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="630" viewBox="0 0 1200 630">
+  <defs>
+    <radialGradient id="glow" cx="50%" cy="50%" r="60%">
+      <stop offset="0%" stop-color="#3182F6" stop-opacity="0.28"/>
+      <stop offset="60%" stop-color="#3182F6" stop-opacity="0.06"/>
+      <stop offset="100%" stop-color="#3182F6" stop-opacity="0"/>
+    </radialGradient>
+    <linearGradient id="brand" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#7BB7FF"/>
+      <stop offset="50%" stop-color="#3182F6"/>
+      <stop offset="100%" stop-color="#1a5fd4"/>
+    </linearGradient>
+    <linearGradient id="wordmark" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#FFFFFF"/>
+      <stop offset="100%" stop-color="#C7C7CC"/>
+    </linearGradient>
+  </defs>
+
+  <!-- background -->
+  <rect width="1200" height="630" fill="#0F0F0F"/>
+
+  <!-- ambient glow -->
+  <ellipse cx="320" cy="420" rx="500" ry="380" fill="url(#glow)"/>
+  <ellipse cx="980" cy="160" rx="420" ry="320" fill="url(#glow)"/>
+
+  <!-- top border accent line -->
+  <rect x="0" y="0" width="1200" height="2" fill="#3182F6" opacity="0.4"/>
+
+  <!-- ── content (left-aligned, generous padding) ── -->
+  <g transform="translate(96, 132)">
+    <!-- logo tile -->
+    <rect width="104" height="104" rx="26" fill="url(#brand)"/>
+    <!-- synaptic wave (matches icon.svg motif) -->
+    <path d="M22 52 L42 52 L50 30 L62 70 L74 38 L82 52 L102 52"
+          stroke="#FFFFFF" stroke-width="7" fill="none"
+          stroke-linecap="round" stroke-linejoin="round"
+          transform="translate(-10, 0) scale(1.1)"
+          opacity="0.95"/>
+
+    <!-- wordmark -->
+    <text x="0" y="220" font-family="-apple-system, BlinkMacSystemFont, 'SF Pro', system-ui, sans-serif"
+          font-size="124" font-weight="700" fill="url(#wordmark)" letter-spacing="-3">Synaptix</text>
+
+    <!-- tagline -->
+    <text x="4" y="282" font-family="-apple-system, BlinkMacSystemFont, 'Apple SD Gothic Neo', system-ui, sans-serif"
+          font-size="32" font-weight="500" fill="#AEAEB2">AI 기반 개인 대시보드</text>
+
+    <!-- feature chips row -->
+    <g transform="translate(4, 332)" font-family="-apple-system, BlinkMacSystemFont, 'Apple SD Gothic Neo', system-ui, sans-serif"
+       font-size="20" font-weight="500">
+      <g transform="translate(0, 0)">
+        <rect width="92" height="42" rx="21" fill="rgba(255,255,255,0.06)" stroke="rgba(255,255,255,0.1)" stroke-width="1"/>
+        <text x="46" y="28" text-anchor="middle" fill="#F2F2F7">날씨</text>
+      </g>
+      <g transform="translate(104, 0)">
+        <rect width="92" height="42" rx="21" fill="rgba(255,255,255,0.06)" stroke="rgba(255,255,255,0.1)" stroke-width="1"/>
+        <text x="46" y="28" text-anchor="middle" fill="#F2F2F7">주식</text>
+      </g>
+      <g transform="translate(208, 0)">
+        <rect width="92" height="42" rx="21" fill="rgba(255,255,255,0.06)" stroke="rgba(255,255,255,0.1)" stroke-width="1"/>
+        <text x="46" y="28" text-anchor="middle" fill="#F2F2F7">뉴스</text>
+      </g>
+      <g transform="translate(312, 0)">
+        <rect width="108" height="42" rx="21" fill="rgba(255,255,255,0.06)" stroke="rgba(255,255,255,0.1)" stroke-width="1"/>
+        <text x="54" y="28" text-anchor="middle" fill="#F2F2F7">할 일</text>
+      </g>
+      <g transform="translate(432, 0)">
+        <rect width="108" height="42" rx="21" fill="rgba(255,255,255,0.06)" stroke="rgba(255,255,255,0.1)" stroke-width="1"/>
+        <text x="54" y="28" text-anchor="middle" fill="#F2F2F7">가계부</text>
+      </g>
+      <g transform="translate(552, 0)">
+        <rect width="124" height="42" rx="21" fill="rgba(49,130,246,0.18)" stroke="rgba(49,130,246,0.5)" stroke-width="1"/>
+        <text x="62" y="28" text-anchor="middle" fill="#7BB7FF">AI 채팅</text>
+      </g>
+    </g>
+  </g>
+
+  <!-- bottom-right: pixel-style label -->
+  <g transform="translate(936, 568)">
+    <circle cx="0" cy="-2" r="4" fill="#05D686"/>
+    <text x="14" y="2" font-family="ui-monospace, 'SF Mono', Menlo, monospace" font-size="14"
+          fill="#636366" letter-spacing="4">SYNAPTIX · DASHBOARD</text>
+  </g>
+</svg>
