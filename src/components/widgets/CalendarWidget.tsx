@@ -87,11 +87,14 @@ export function CalendarWidget() {
             <div className="skeleton h-14 w-16 rounded-xl" />
           ) : (
             <>
-              <p style={{ fontSize: '48px', fontWeight: 700, color: '#F2F2F7', lineHeight: 1, letterSpacing: '-0.02em' }}>
-                {pending.length}
-              </p>
-              <p style={{ fontSize: '14px', color: '#8E8E93', marginTop: 10 }}>
-                {pending.length === 0 ? '모두 완료!' : `개 남음 · 완료 ${done.length}개`}
+              <div className="flex items-baseline gap-1.5">
+                <p style={{ fontSize: '48px', fontWeight: 700, color: '#F2F2F7', lineHeight: 1, letterSpacing: '-0.02em' }}>
+                  {pending.length}
+                </p>
+                <p style={{ fontSize: '15px', color: '#8E8E93', whiteSpace: 'nowrap' }}>개 남음</p>
+              </div>
+              <p style={{ fontSize: '13px', color: '#636366', marginTop: 8, whiteSpace: 'nowrap' }}>
+                {pending.length === 0 ? '모두 완료! ✓' : `완료 ${done.length}개`}
               </p>
             </>
           )}

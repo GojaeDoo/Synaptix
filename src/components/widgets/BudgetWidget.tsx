@@ -118,7 +118,7 @@ export function BudgetWidget() {
             <div className="skeleton h-10 w-32 rounded-xl" />
           ) : (
             <>
-              <p style={{ fontFamily: PIXEL, fontSize: '6px', color: '#636366', marginBottom: 10, letterSpacing: '0.06em', whiteSpace: 'nowrap' }}>
+              <p style={{ fontFamily: PIXEL, fontSize: '9px', color: '#636366', marginBottom: 10, letterSpacing: '0.06em', whiteSpace: 'nowrap' }}>
                 {monthLabel} 잔액
               </p>
               <p className="truncate" style={{ fontSize: 'clamp(20px, 5vw, 28px)', fontWeight: 700, lineHeight: 1, letterSpacing: '-0.02em', color: balance >= 0 ? '#F2F2F7' : '#FF453A' }}>
@@ -131,12 +131,12 @@ export function BudgetWidget() {
         {/* footer: income / expense */}
         <div className="flex items-stretch gap-0 pt-4" style={{ borderTop: `1px solid ${BORDER}` }}>
           <div className="flex-1 min-w-0 pr-3">
-            <p style={{ fontFamily: PIXEL, fontSize: '6px', color: '#636366', marginBottom: 6, whiteSpace: 'nowrap' }}>수입</p>
+            <p style={{ fontFamily: PIXEL, fontSize: '9px', color: '#636366', marginBottom: 6, whiteSpace: 'nowrap' }}>수입</p>
             <p className="truncate" style={{ fontSize: '13px', fontWeight: 600, color: '#05D686' }}>+{formatKRW(income)}</p>
           </div>
           <div style={{ width: 1, background: BORDER, flexShrink: 0 }} />
           <div className="flex-1 min-w-0 pl-3">
-            <p style={{ fontFamily: PIXEL, fontSize: '6px', color: '#636366', marginBottom: 6, whiteSpace: 'nowrap' }}>지출</p>
+            <p style={{ fontFamily: PIXEL, fontSize: '9px', color: '#636366', marginBottom: 6, whiteSpace: 'nowrap' }}>지출</p>
             <p className="truncate" style={{ fontSize: '13px', fontWeight: 600, color: '#FF453A' }}>-{formatKRW(expense)}</p>
           </div>
         </div>
@@ -181,7 +181,7 @@ export function BudgetWidget() {
             <div key={i} className="flex-1 flex flex-col">
               <div className="flex items-center gap-1.5 mb-2" style={{ color }}>
                 {icon}
-                <p style={{ fontFamily: PIXEL, fontSize: '10px', color: '#636366', letterSpacing: '0.06em' }}>{label}</p>
+                <p style={{ fontFamily: PIXEL, fontSize: '12px', color: '#636366', letterSpacing: '0.06em' }}>{label}</p>
               </div>
               <p style={{ fontSize: '15px', fontWeight: 600, lineHeight: 1, color }}>{value}</p>
             </div>

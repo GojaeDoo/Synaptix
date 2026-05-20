@@ -196,14 +196,14 @@ export function StockWidget() {
           </div>
         )}
 
-        <div className="flex items-center gap-4 pt-4" style={{ borderTop: `1px solid ${BORDER}` }}>
-          <div className="flex items-center gap-2">
-            <div className="w-2 h-2 rounded-full" style={{ background: '#05D686' }} />
-            <p style={{ fontSize: '13px', color: '#8E8E93' }}>{upCount}개 상승</p>
+        <div className="flex items-center justify-center gap-4 pt-4" style={{ borderTop: `1px solid ${BORDER}` }}>
+          <div className="flex items-center gap-2 shrink-0">
+            <div className="w-2 h-2 rounded-full shrink-0" style={{ background: '#05D686' }} />
+            <p style={{ fontSize: '13px', color: '#F2F2F7', whiteSpace: 'nowrap' }}>{upCount}개 상승</p>
           </div>
-          <div className="flex items-center gap-2">
-            <div className="w-2 h-2 rounded-full" style={{ background: '#FF453A' }} />
-            <p style={{ fontSize: '13px', color: '#8E8E93' }}>{downCount}개 하락</p>
+          <div className="flex items-center gap-2 shrink-0">
+            <div className="w-2 h-2 rounded-full shrink-0" style={{ background: '#FF453A' }} />
+            <p style={{ fontSize: '13px', color: '#F2F2F7', whiteSpace: 'nowrap' }}>{downCount}개 하락</p>
           </div>
         </div>
       </div>
