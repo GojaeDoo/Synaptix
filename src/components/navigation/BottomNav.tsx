@@ -1,28 +1,27 @@
 import { Cloud, TrendingUp, Newspaper, CalendarDays, Wallet, Sparkles } from 'lucide-react'
+import { useNavigate, useLocation } from 'react-router-dom'
 import { useChatStore } from '@/store/chatStore'
 
-const SCROLL_TABS = [
-  { id: 'weather',  label: '날씨',   icon: Cloud },
-  { id: 'stocks',   label: '주식',   icon: TrendingUp },
-  { id: 'news',     label: '뉴스',   icon: Newspaper },
-  { id: 'calendar', label: '캘린더', icon: CalendarDays },
-  { id: 'budget',   label: '가계부', icon: Wallet },
+const NAV_TABS = [
+  { path: '/widgets/weather',  label: '날씨',   icon: Cloud },
+  { path: '/widgets/stocks',   label: '주식',   icon: TrendingUp },
+  { path: '/widgets/news',     label: '뉴스',   icon: Newspaper },
+  { path: '/widgets/calendar', label: '캘린더', icon: CalendarDays },
+  { path: '/widgets/budget',   label: '가계부', icon: Wallet },
 ] as const
 
 export function BottomNav() {
   const { isOpen, toggleChat } = useChatStore()
-
-  const scrollTo = (id: string) => {
-    document.getElementById(`widget-${id}`)?.scrollIntoView({ behavior: 'smooth', block: 'start' })
-  }
+  const navigate = useNavigate()
+  const { pathname } = useLocation()
 
   const btnBase: React.CSSProperties = {
     display: 'flex',
     flexDirection: 'column',
     alignItems: 'center',
-    gap: 6,
-    padding: '10px 12px',
-    borderRadius: 16,
+    gap: 4,
+    padding: '6px 10px',
+    borderRadius: 14,
     border: 'none',
     background: 'none',
     cursor: 'pointer',
@@ -42,21 +41,28 @@ export function BottomNav() {
           paddingBottom: 'env(safe-area-inset-bottom, 0px)',
         }}
       >
-        {/* 탭 행 — 상하 패딩 넉넉하게 */}
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-around', padding: '12px 8px 12px' }}>
+        {/* 탭 행 — 하단 여백은 safe-area-inset이 처리하므로 최소화 */}
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-around', padding: '6px 8px' }}>
 
-          {SCROLL_TABS.map(({ id, label, icon: Icon }) => (
-            <button
-              key={id}
-              onClick={() => scrollTo(id)}
-              style={btnBase}
-              onMouseEnter={(e) => { e.currentTarget.style.color = '#F2F2F7'; e.currentTarget.style.background = '#1A1A1A' }}
-              onMouseLeave={(e) => { e.currentTarget.style.color = '#636366'; e.currentTarget.style.background = 'none' }}
-            >
-              <Icon size={22} strokeWidth={1.7} />
-              <span style={{ fontSize: 11, fontWeight: 500 }}>{label}</span>
-            </button>
-          ))}
+          {NAV_TABS.map(({ path, label, icon: Icon }) => {
+            const active = pathname === path
+            return (
+              <button
+                key={path}
+                onClick={() => navigate(path)}
+                style={{
+                  ...btnBase,
+                  color: active ? '#3182F6' : '#636366',
+                  background: active ? 'rgba(49,130,246,0.12)' : 'none',
+                }}
+                onMouseEnter={(e) => { e.currentTarget.style.color = active ? '#3182F6' : '#F2F2F7'; e.currentTarget.style.background = active ? 'rgba(49,130,246,0.12)' : '#1A1A1A' }}
+                onMouseLeave={(e) => { e.currentTarget.style.color = active ? '#3182F6' : '#636366'; e.currentTarget.style.background = active ? 'rgba(49,130,246,0.12)' : 'none' }}
+              >
+                <Icon size={22} strokeWidth={1.7} />
+                <span style={{ fontSize: 11, fontWeight: 500 }}>{label}</span>
+              </button>
+            )
+          })}
 
           {/* AI 탭 */}
           <button
