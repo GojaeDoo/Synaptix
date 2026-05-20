@@ -90,12 +90,43 @@ function mapForecast(d: OWMForecastResponse): ForecastData {
   }
 }
 
+interface OWMGeocodeResult {
+  name: string
+  local_names?: Record<string, string>
+  lat: number
+  lon: number
+  country: string
+}
+
+export async function geocodeCity(city: string): Promise<{ lat: number; lon: number; name: string } | null> {
+  const data = await fetchJson<OWMGeocodeResult[]>(
+    `/api/weather?type=geocode&city=${encodeURIComponent(city)}`,
+    '위치 검색'
+  )
+  if (!Array.isArray(data) || data.length === 0) return null
+  const r = data[0]
+  return { lat: r.lat, lon: r.lon, name: r.local_names?.ko ?? r.name }
+}
+
 export async function fetchWeather(city: string): Promise<WeatherData> {
   const data = await fetchJson<OWMWeatherResponse>(
     `/api/weather?type=current&city=${encodeURIComponent(city)}`,
     '날씨 데이터'
   )
   return mapWeather(data)
+}
+
+// 한글 도시명도 처리: 일단 q=...로 시도하고, 실패하면 geocode → coords로 폴백.
+export async function fetchWeatherSmart(city: string): Promise<WeatherData> {
+  try {
+    return await fetchWeather(city)
+  } catch (e) {
+    if (e instanceof ConfigError) throw e
+    const geo = await geocodeCity(city)
+    if (!geo) throw new Error(`'${city}' 위치를 찾지 못했습니다`)
+    const data = await fetchWeatherByCoords(geo.lat, geo.lon)
+    return { ...data, city: geo.name }
+  }
 }
 
 export async function fetchWeatherByCoords(lat: number, lon: number): Promise<WeatherData> {

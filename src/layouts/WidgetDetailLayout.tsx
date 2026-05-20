@@ -5,15 +5,19 @@ import { TopNav } from '@/components/navigation/TopNav'
 import { BottomNav } from '@/components/navigation/BottomNav'
 import { AppBackground } from './AppBackground'
 
+// 위젯 카드 우상단의 픽셀 라벨(BUDGET, NEWS 등)과 상세 페이지 헤더의 연속성을 유지하기 위해 동일한 픽셀 키커를 노출한다.
+const PIXEL = "'Press Start 2P', monospace"
+
 interface Props {
   title: string
+  kicker?: string
   subtitle?: string
   accent?: string
   actions?: ReactNode
   children: ReactNode
 }
 
-export function WidgetDetailLayout({ title, subtitle, accent = '#3182F6', actions, children }: Props) {
+export function WidgetDetailLayout({ title, kicker, subtitle, accent = '#3182F6', actions, children }: Props) {
   const navigate = useNavigate()
 
   return (
@@ -38,6 +42,19 @@ export function WidgetDetailLayout({ title, subtitle, accent = '#3182F6', action
                 <ChevronLeft size={18} />
               </button>
               <div>
+                {kicker && (
+                  <p
+                    className="mb-2"
+                    style={{
+                      fontFamily: PIXEL,
+                      fontSize: '9px',
+                      color: accent,
+                      letterSpacing: '0.14em',
+                    }}
+                  >
+                    {kicker}
+                  </p>
+                )}
                 <h1
                   className="text-[24px] sm:text-[28px] font-semibold leading-tight tracking-tight"
                   style={{ color: '#F2F2F7' }}

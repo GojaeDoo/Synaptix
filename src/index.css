@@ -168,39 +168,6 @@ body {
   transform: none;
 }
 
-/* ── Terminal typing background ──────────────── */
-.terminal-panel {
-  font-family: 'JetBrains Mono', 'SF Mono', 'Menlo', 'Consolas', monospace;
-  font-size: 10px;
-  line-height: 1.6;
-  color: rgba(255, 255, 255, 0.10);
-  white-space: pre-wrap;
-  margin: 0;
-  letter-spacing: 0.01em;
-  user-select: none;
-  text-shadow: 0 0 12px rgba(49, 130, 246, 0.15);
-}
-@media (min-width: 640px) {
-  .terminal-panel { font-size: 12px; line-height: 1.65; }
-}
-
-.terminal-cursor {
-  display: inline-block;
-  margin-left: 2px;
-  color: rgba(49, 130, 246, 0.45);
-  animation: terminal-blink 1.05s steps(1) infinite;
-}
-
-@keyframes terminal-blink {
-  0%, 50%   { opacity: 1; }
-  50.01%, 100% { opacity: 0; }
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .terminal-cursor { animation: none; opacity: 0.5; }
-}
-
-
 /* ── iOS safe areas ───────────────────────────── */
 .safe-bottom { padding-bottom: env(safe-area-inset-bottom, 0px); }
 .safe-top    { padding-top:    env(safe-area-inset-top,    0px); }

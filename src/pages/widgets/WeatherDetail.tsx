@@ -77,7 +77,7 @@ export function WeatherDetail() {
 
   if (loadingCurrent || !current) {
     return (
-      <WidgetDetailLayout title="날씨" subtitle="현재 날씨와 예보" accent="#60A5FA">
+      <WidgetDetailLayout title="날씨" kicker="WEATHER" subtitle="현재 날씨와 예보" accent="#60A5FA">
         <div className="grid gap-4">
           <div className="skeleton h-44 rounded-2xl" />
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
@@ -94,6 +94,7 @@ export function WeatherDetail() {
   return (
     <WidgetDetailLayout
       title="날씨"
+      kicker="WEATHER"
       subtitle={isDemoMode ? `${current.city} · 데모 데이터` : current.city}
       accent={isNight ? '#5B6CC9' : '#60A5FA'}
       actions={

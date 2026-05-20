@@ -1,6 +1,7 @@
 export const config = { runtime: 'edge' }
 
 const BASE = 'https://api.openweathermap.org/data/2.5'
+const GEO_BASE = 'https://api.openweathermap.org/geo/1.0'
 
 export default async function handler(req: Request): Promise<Response> {
   const key = process.env.OPENWEATHER_API_KEY
@@ -14,8 +15,25 @@ export default async function handler(req: Request): Promise<Response> {
   const lat = url.searchParams.get('lat')
   const lon = url.searchParams.get('lon')
 
+  // 한글 도시명은 /weather?q=...로는 거의 항상 404가 나서, geocoding을 거치는 별도 타입을 제공.
+  if (type === 'geocode') {
+    if (!city) return json({ error: 'city required' }, 400)
+    const params = new URLSearchParams({ q: city, limit: '1', appid: key })
+    const res = await fetch(`${GEO_BASE}/direct?${params}`)
+    const body = await res.text()
+    return new Response(body, {
+      status: res.status,
+      headers: {
+        'Content-Type': 'application/json',
+        'Cache-Control': res.ok
+          ? 'public, s-maxage=86400, stale-while-revalidate=604800'
+          : 'no-store',
+      },
+    })
+  }
+
   if (type !== 'current' && type !== 'forecast') {
-    return json({ error: 'type must be "current" or "forecast"' }, 400)
+    return json({ error: 'type must be "current", "forecast", or "geocode"' }, 400)
   }
 
   const params = new URLSearchParams({ appid: key, units: 'metric', lang: 'kr' })

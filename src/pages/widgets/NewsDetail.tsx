@@ -84,6 +84,7 @@ export function NewsDetail() {
   return (
     <WidgetDetailLayout
       title="해커뉴스"
+      kicker="HACKER NEWS"
       subtitle="Hacker News 인기 스토리 Top 30"
       accent="#FF6600"
       actions={

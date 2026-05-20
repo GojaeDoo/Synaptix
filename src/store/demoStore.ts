@@ -12,8 +12,10 @@ interface DemoState {
   transactions: Transaction[]
   addTodo: (input: Omit<Todo, 'id' | 'created_at'>) => void
   toggleTodo: (args: { id: string; completed: boolean }) => void
+  updateTodo: (args: { id: string; patch: Partial<Omit<Todo, 'id' | 'created_at'>> }) => void
   deleteTodo: (id: string) => void
   addTransaction: (input: Omit<Transaction, 'id' | 'created_at'>) => void
+  updateTransaction: (args: { id: string; patch: Partial<Omit<Transaction, 'id' | 'created_at'>> }) => void
   deleteTransaction: (id: string) => void
   reset: () => void
 }
@@ -68,6 +70,11 @@ export const useDemoStore = create<DemoState>()(
           todos: s.todos.map((t) => (t.id === id ? { ...t, completed } : t)),
         })),
 
+      updateTodo: ({ id, patch }) =>
+        set((s) => ({
+          todos: s.todos.map((t) => (t.id === id ? { ...t, ...patch } : t)),
+        })),
+
       deleteTodo: (id) =>
         set((s) => ({ todos: s.todos.filter((t) => t.id !== id) })),
 
@@ -85,6 +92,11 @@ export const useDemoStore = create<DemoState>()(
             },
             ...s.transactions,
           ],
+        })),
+
+      updateTransaction: ({ id, patch }) =>
+        set((s) => ({
+          transactions: s.transactions.map((t) => (t.id === id ? { ...t, ...patch } : t)),
         })),
 
       deleteTransaction: (id) =>

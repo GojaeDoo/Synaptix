@@ -11,6 +11,7 @@ export function useTransactions() {
 
   const demoTxns = useDemoStore((s) => s.transactions)
   const demoAdd = useDemoStore((s) => s.addTransaction)
+  const demoUpdate = useDemoStore((s) => s.updateTransaction)
   const demoDelete = useDemoStore((s) => s.deleteTransaction)
 
   const supabaseQuery = useQuery({
@@ -38,6 +39,20 @@ export function useTransactions() {
     },
   })
 
+  const updateTransaction = useMutation({
+    mutationFn: async (args: {
+      id: string
+      patch: Partial<Omit<Transaction, 'id' | 'created_at'>>
+    }) => {
+      if (!session) return demoUpdate(args)
+      const { error } = await supabase.from('transactions').update(args.patch).eq('id', args.id)
+      if (error) throw error
+    },
+    onSuccess: () => {
+      if (session) qc.invalidateQueries({ queryKey: ['transactions'] })
+    },
+  })
+
   const deleteTransaction = useMutation({
     mutationFn: async (id: string) => {
       if (!session) return demoDelete(id)
@@ -55,6 +70,7 @@ export function useTransactions() {
     isError: session ? supabaseQuery.isError : false,
     error: session ? supabaseQuery.error : null,
     addTransaction,
+    updateTransaction,
     deleteTransaction,
   }
 }

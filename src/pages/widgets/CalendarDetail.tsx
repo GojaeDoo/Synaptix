@@ -18,12 +18,14 @@ import {
   ChevronLeft,
   ChevronRight,
   Plus,
+  Pencil,
   Check,
   Trash2,
   Search,
   CircleDashed,
   CircleCheck,
   Flag,
+  X,
 } from 'lucide-react'
 import { WidgetDetailLayout } from '@/layouts/WidgetDetailLayout'
 import { useTodos } from '@/hooks/useTodos'
@@ -64,13 +66,21 @@ export function CalendarDetail() {
   const setMonth = useCalendarStore((s) => s.setMonth)
   const selectedDate = useCalendarStore((s) => s.selectedDate)
   const setSelectedDate = useCalendarStore((s) => s.setSelectedDate)
-  const { data: todos = [], isLoading, addTodo, toggleTodo, deleteTodo } = useTodos()
+  const { data: todos = [], isLoading, addTodo, toggleTodo, updateTodo, deleteTodo } = useTodos()
 
   const [search, setSearch] = useState('')
   const [statusFilter, setStatusFilter] = useState<StatusFilter>('all')
   const [priorityFilter, setPriorityFilter] = useState<'all' | Todo['priority']>('all')
   const [newTitle, setNewTitle] = useState('')
   const [newPriority, setNewPriority] = useState<Todo['priority']>('medium')
+
+  const [editingId, setEditingId] = useState<string | null>(null)
+  const [editForm, setEditForm] = useState({
+    title: '',
+    priority: 'medium' as Todo['priority'],
+    due_date: '' as string | '',
+  })
+  const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null)
 
   const days = eachDayOfInterval({ start: startOfMonth(month), end: endOfMonth(month) })
   const pad = getDay(startOfMonth(month))
@@ -132,14 +142,39 @@ export function CalendarDetail() {
     setNewTitle('')
   }
 
+  const startEdit = (todo: Todo) => {
+    setEditForm({
+      title: todo.title,
+      priority: todo.priority,
+      due_date: todo.due_date ?? '',
+    })
+    setEditingId(todo.id)
+  }
+
+  const submitEdit = () => {
+    if (!editingId || !editForm.title.trim()) return
+    updateTodo.mutate({
+      id: editingId,
+      patch: {
+        title: editForm.title.trim(),
+        priority: editForm.priority,
+        due_date: editForm.due_date || null,
+      },
+    })
+    setEditingId(null)
+  }
+
+  const confirmDeleteTodo = todos.find((t) => t.id === confirmDeleteId) ?? null
+
   return (
     <WidgetDetailLayout
       title="할 일"
+      kicker="TODO"
       subtitle={`총 ${todos.length}개 · 진행 중 ${pending}개 · 완료 ${done}개`}
       accent="#3182F6"
     >
       {/* stat cards */}
-      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-5">
+      <div className="grid grid-cols-4 gap-2 sm:gap-3 mb-5">
         {[
           { label: '전체', value: todos.length, color: '#F2F2F7', icon: <Flag size={14} /> },
           { label: '진행 중', value: pending, color: '#3182F6', icon: <CircleDashed size={14} /> },
@@ -148,14 +183,14 @@ export function CalendarDetail() {
         ].map((s) => (
           <div
             key={s.label}
-            className="rounded-2xl p-4"
+            className="rounded-xl sm:rounded-2xl p-2.5 sm:p-4"
             style={{ background: CARD_BG, border: `1px solid ${BORDER}` }}
           >
-            <div className="flex items-center gap-1.5 mb-2" style={{ color: s.color }}>
-              {s.icon}
-              <p className="text-[11px] font-medium" style={{ color: '#8E8E93' }}>{s.label}</p>
+            <div className="flex items-center gap-1 sm:gap-1.5 mb-1 sm:mb-2" style={{ color: s.color }}>
+              <span className="hidden sm:inline-flex">{s.icon}</span>
+              <p className="text-[10.5px] sm:text-[11px] font-medium whitespace-nowrap" style={{ color: '#8E8E93' }}>{s.label}</p>
             </div>
-            <p className="text-[22px] font-semibold tabular-nums" style={{ color: s.color }}>
+            <p className="text-[18px] sm:text-[22px] font-semibold tabular-nums" style={{ color: s.color }}>
               {s.value}
             </p>
           </div>
@@ -282,7 +317,7 @@ export function CalendarDetail() {
                 onChange={(e) => setNewTitle(e.target.value)}
                 onKeyDown={(e) => e.key === 'Enter' && handleAdd()}
                 placeholder={`${format(parseISO(selectedDate), 'M/d')}에 할 일 추가`}
-                className="flex-1"
+                className="w-full sm:w-auto sm:flex-1"
                 style={fieldStyle}
               />
               <select
@@ -408,21 +443,211 @@ export function CalendarDetail() {
                   >
                     {PRIORITY_LABEL[todo.priority]}
                   </span>
-                  <button
-                    onClick={() => deleteTodo.mutate(todo.id)}
-                    className="opacity-0 group-hover:opacity-100 p-1 transition-all cursor-pointer rounded"
-                    style={{ color: '#636366' }}
-                    onMouseEnter={(e) => (e.currentTarget.style.color = '#FF453A')}
-                    onMouseLeave={(e) => (e.currentTarget.style.color = '#636366')}
-                  >
-                    <Trash2 size={13} />
-                  </button>
+                  <div className="flex items-center gap-0.5 opacity-100 sm:opacity-0 sm:group-hover:opacity-100 transition-all">
+                    <button
+                      onClick={() => startEdit(todo)}
+                      className="p-1 transition-colors cursor-pointer rounded"
+                      style={{ color: '#636366' }}
+                      onMouseEnter={(e) => (e.currentTarget.style.color = '#3182F6')}
+                      onMouseLeave={(e) => (e.currentTarget.style.color = '#636366')}
+                      aria-label="수정"
+                    >
+                      <Pencil size={13} />
+                    </button>
+                    <button
+                      onClick={() => setConfirmDeleteId(todo.id)}
+                      className="p-1 transition-colors cursor-pointer rounded"
+                      style={{ color: '#636366' }}
+                      onMouseEnter={(e) => (e.currentTarget.style.color = '#FF453A')}
+                      onMouseLeave={(e) => (e.currentTarget.style.color = '#636366')}
+                      aria-label="삭제"
+                    >
+                      <Trash2 size={13} />
+                    </button>
+                  </div>
                 </div>
               ))}
             </div>
           )}
         </div>
       </div>
+
+      {/* edit modal */}
+      {editingId && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center p-4"
+          style={{ background: 'rgba(0,0,0,0.6)', backdropFilter: 'blur(4px)' }}
+          onClick={() => setEditingId(null)}
+        >
+          <div
+            className="w-full max-w-sm rounded-2xl overflow-hidden fade-up"
+            style={{ background: CARD_BG, border: `1px solid ${BORDER}` }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div
+              className="flex items-center justify-between px-5 py-4"
+              style={{ borderBottom: `1px solid ${BORDER}` }}
+            >
+              <p className="text-[15px] font-semibold" style={{ color: '#F2F2F7' }}>
+                할 일 수정
+              </p>
+              <button
+                onClick={() => setEditingId(null)}
+                className="p-1 cursor-pointer transition-colors rounded-lg"
+                style={{ color: '#636366' }}
+                onMouseEnter={(e) => (e.currentTarget.style.color = '#F2F2F7')}
+                onMouseLeave={(e) => (e.currentTarget.style.color = '#636366')}
+                aria-label="닫기"
+              >
+                <X size={16} />
+              </button>
+            </div>
+            <div className="p-4 space-y-3">
+              <input
+                value={editForm.title}
+                onChange={(e) => setEditForm((f) => ({ ...f, title: e.target.value }))}
+                onKeyDown={(e) => e.key === 'Enter' && submitEdit()}
+                placeholder="할 일 제목"
+                style={{ ...fieldStyle, width: '100%' }}
+              />
+              <div className="grid grid-cols-2 gap-2">
+                <select
+                  value={editForm.priority}
+                  onChange={(e) => setEditForm((f) => ({ ...f, priority: e.target.value as Todo['priority'] }))}
+                  style={{ ...fieldStyle, width: '100%', cursor: 'pointer', paddingRight: 8 }}
+                >
+                  <option value="high" style={{ background: '#141730' }}>높음</option>
+                  <option value="medium" style={{ background: '#141730' }}>보통</option>
+                  <option value="low" style={{ background: '#141730' }}>낮음</option>
+                </select>
+                <input
+                  type="date"
+                  value={editForm.due_date}
+                  onChange={(e) => setEditForm((f) => ({ ...f, due_date: e.target.value }))}
+                  style={{ ...fieldStyle, width: '100%' }}
+                />
+              </div>
+              {editForm.due_date && (
+                <button
+                  onClick={() => setEditForm((f) => ({ ...f, due_date: '' }))}
+                  className="text-[11.5px] cursor-pointer transition-colors"
+                  style={{ color: '#8E8E93' }}
+                  onMouseEnter={(e) => (e.currentTarget.style.color = '#F2F2F7')}
+                  onMouseLeave={(e) => (e.currentTarget.style.color = '#8E8E93')}
+                >
+                  마감일 없애기
+                </button>
+              )}
+            </div>
+            <div className="flex gap-2 px-5 py-4" style={{ borderTop: `1px solid ${BORDER}` }}>
+              <button
+                onClick={() => setEditingId(null)}
+                className="flex-1 h-10 rounded-xl transition-colors cursor-pointer text-[13px] font-medium"
+                style={{ background: 'rgba(255,255,255,0.06)', color: '#F2F2F7' }}
+                onMouseEnter={(e) => (e.currentTarget.style.background = 'rgba(255,255,255,0.1)')}
+                onMouseLeave={(e) => (e.currentTarget.style.background = 'rgba(255,255,255,0.06)')}
+              >
+                취소
+              </button>
+              <button
+                onClick={submitEdit}
+                disabled={!editForm.title.trim()}
+                className="flex-1 h-10 rounded-xl transition-colors cursor-pointer text-[13px] font-medium disabled:cursor-not-allowed disabled:opacity-50"
+                style={{ background: '#3182F6', color: '#ffffff' }}
+                onMouseEnter={(e) => { if (editForm.title.trim()) e.currentTarget.style.background = '#5c6ecc' }}
+                onMouseLeave={(e) => { if (editForm.title.trim()) e.currentTarget.style.background = '#3182F6' }}
+              >
+                수정하기
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* delete confirmation modal */}
+      {confirmDeleteTodo && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center p-4"
+          style={{ background: 'rgba(0,0,0,0.6)', backdropFilter: 'blur(4px)' }}
+          onClick={() => setConfirmDeleteId(null)}
+        >
+          <div
+            className="w-full max-w-sm rounded-2xl overflow-hidden fade-up"
+            style={{ background: CARD_BG, border: `1px solid ${BORDER}` }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div
+              className="flex items-center justify-between px-5 py-4"
+              style={{ borderBottom: `1px solid ${BORDER}` }}
+            >
+              <p className="text-[15px] font-semibold" style={{ color: '#F2F2F7' }}>
+                할 일 삭제
+              </p>
+              <button
+                onClick={() => setConfirmDeleteId(null)}
+                className="p-1 cursor-pointer transition-colors rounded-lg"
+                style={{ color: '#636366' }}
+                onMouseEnter={(e) => (e.currentTarget.style.color = '#F2F2F7')}
+                onMouseLeave={(e) => (e.currentTarget.style.color = '#636366')}
+                aria-label="닫기"
+              >
+                <X size={16} />
+              </button>
+            </div>
+            <div className="px-5 py-5">
+              <p className="text-[13px] leading-relaxed mb-4" style={{ color: '#AEAEB2' }}>
+                이 할 일을 삭제하시겠어요? 되돌릴 수 없습니다.
+              </p>
+              <div
+                className="rounded-xl p-3.5"
+                style={{ background: 'rgba(255,255,255,0.04)', border: `1px solid ${BORDER}` }}
+              >
+                <div className="flex items-center gap-2 mb-1.5">
+                  <div
+                    className="w-1 h-4 rounded-full shrink-0"
+                    style={{ background: PRIORITY_COLOR[confirmDeleteTodo.priority] }}
+                  />
+                  <p className="text-[14px] font-medium truncate" style={{ color: '#F2F2F7' }}>
+                    {confirmDeleteTodo.title}
+                  </p>
+                </div>
+                <p className="text-[12px]" style={{ color: '#8E8E93' }}>
+                  {PRIORITY_LABEL[confirmDeleteTodo.priority]}
+                  {confirmDeleteTodo.due_date && (
+                    <>
+                      <span style={{ margin: '0 6px', opacity: 0.4 }}>·</span>
+                      {format(parseISO(confirmDeleteTodo.due_date), 'M월 d일 (EEE)', { locale: ko })}
+                    </>
+                  )}
+                </p>
+              </div>
+            </div>
+            <div className="flex gap-2 px-5 py-4" style={{ borderTop: `1px solid ${BORDER}` }}>
+              <button
+                onClick={() => setConfirmDeleteId(null)}
+                className="flex-1 h-10 rounded-xl transition-colors cursor-pointer text-[13px] font-medium"
+                style={{ background: 'rgba(255,255,255,0.06)', color: '#F2F2F7' }}
+                onMouseEnter={(e) => (e.currentTarget.style.background = 'rgba(255,255,255,0.1)')}
+                onMouseLeave={(e) => (e.currentTarget.style.background = 'rgba(255,255,255,0.06)')}
+              >
+                취소
+              </button>
+              <button
+                onClick={() => {
+                  deleteTodo.mutate(confirmDeleteTodo.id)
+                  setConfirmDeleteId(null)
+                }}
+                className="flex-1 h-10 rounded-xl transition-colors cursor-pointer text-[13px] font-medium"
+                style={{ background: '#FF453A', color: '#ffffff' }}
+                onMouseEnter={(e) => (e.currentTarget.style.background = '#E03A30')}
+                onMouseLeave={(e) => (e.currentTarget.style.background = '#FF453A')}
+              >
+                삭제
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </WidgetDetailLayout>
   )
 }

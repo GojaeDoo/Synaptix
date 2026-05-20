@@ -123,6 +123,7 @@ export function StocksDetail() {
   return (
     <WidgetDetailLayout
       title="시장"
+      kicker="STOCKS"
       subtitle="주식과 암호화폐 시세"
       accent="#05D686"
       actions={

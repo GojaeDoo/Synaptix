@@ -43,7 +43,7 @@ export function BottomNav() {
         }}
       >
         {/* 탭 행 — 상하 패딩 넉넉하게 */}
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-around', padding: '14px 8px 20px' }}>
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-around', padding: '12px 8px 12px' }}>
 
           {SCROLL_TABS.map(({ id, label, icon: Icon }) => (
             <button

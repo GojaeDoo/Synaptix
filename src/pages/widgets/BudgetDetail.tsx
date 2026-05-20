@@ -2,23 +2,41 @@ import { useMemo, useState } from 'react'
 import {
   format,
   parseISO,
-  isSameMonth,
+  startOfDay,
+  endOfDay,
+  startOfWeek,
+  endOfWeek,
   startOfMonth,
   endOfMonth,
+  startOfYear,
+  endOfYear,
+  addDays,
+  subDays,
+  addWeeks,
+  subWeeks,
   addMonths,
   subMonths,
+  addYears,
+  subYears,
+  eachDayOfInterval,
+  eachWeekOfInterval,
   eachMonthOfInterval,
+  differenceInCalendarDays,
 } from 'date-fns'
 import { ko } from 'date-fns/locale'
 import {
   ChevronLeft,
   ChevronRight,
+  ChevronDown,
+  Calendar as CalendarIcon,
   Plus,
+  Pencil,
   Trash2,
   TrendingUp,
   TrendingDown,
   Wallet,
   Search,
+  X,
 } from 'lucide-react'
 import {
   BarChart,
@@ -55,6 +73,9 @@ const INC_CATS = ['급여', '부수입', '기타']
 
 type TypeFilter = 'all' | 'income' | 'expense'
 type SortMode = 'date-desc' | 'date-asc' | 'amount-desc' | 'amount-asc'
+type RangeMode = 'day' | 'week' | 'month' | 'year' | 'custom' | 'all'
+
+const WEEK_OPTS = { weekStartsOn: 1 as const }
 
 const fieldStyle: React.CSSProperties = {
   width: '100%',
@@ -69,11 +90,19 @@ const fieldStyle: React.CSSProperties = {
 }
 
 export function BudgetDetail() {
-  const month = useCalendarStore((s) => s.month)
-  const setMonth = useCalendarStore((s) => s.setMonth)
-  const { data: txns = [], isLoading, addTransaction, deleteTransaction } = useTransactions()
+  const monthFromStore = useCalendarStore((s) => s.month)
+  const setMonthInStore = useCalendarStore((s) => s.setMonth)
+  const {
+    data: txns = [],
+    isLoading,
+    addTransaction,
+    updateTransaction,
+    deleteTransaction,
+  } = useTransactions()
 
   const [open, setOpen] = useState(false)
+  const [editingId, setEditingId] = useState<string | null>(null)
+  const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null)
   const [search, setSearch] = useState('')
   const [typeFilter, setTypeFilter] = useState<TypeFilter>('all')
   const [categoryFilter, setCategoryFilter] = useState<string>('all')
@@ -86,36 +115,161 @@ export function BudgetDetail() {
     date: format(new Date(), 'yyyy-MM-dd'),
   })
 
-  const monthTxns = useMemo(
-    () => txns.filter((t) => isSameMonth(parseISO(t.date), month)),
-    [txns, month]
-  )
+  // 기간 보기 상태. month 모드만 캘린더 스토어와 동기화(캘린더 위젯과 공유).
+  // 다른 모드는 컴포넌트 로컬 anchor를 사용.
+  const [rangeMode, setRangeModeRaw] = useState<RangeMode>('month')
+  const [localAnchor, setLocalAnchor] = useState<Date>(new Date())
+  const [customStart, setCustomStart] = useState(format(startOfMonth(new Date()), 'yyyy-MM-dd'))
+  const [customEnd, setCustomEnd] = useState(format(endOfMonth(new Date()), 'yyyy-MM-dd'))
 
-  const income = monthTxns.filter((t) => t.type === 'income').reduce((s, t) => s + t.amount, 0)
-  const expense = monthTxns.filter((t) => t.type === 'expense').reduce((s, t) => s + t.amount, 0)
+  // 달력 팝오버 상태. pickerStart만 있고 pickerEnd가 null이면 단일 날짜(=하루) 선택 중.
+  const [popoverOpen, setPopoverOpen] = useState(false)
+  const [pickerMonth, setPickerMonth] = useState<Date>(new Date())
+  const [pickerStart, setPickerStart] = useState<Date | null>(null)
+  const [pickerEnd, setPickerEnd] = useState<Date | null>(null)
+
+  const anchor = rangeMode === 'month' ? monthFromStore : localAnchor
+  const setAnchor = (d: Date) => {
+    if (rangeMode === 'month') setMonthInStore(d)
+    else setLocalAnchor(d)
+  }
+
+  const setRangeMode = (m: RangeMode) => {
+    // 모드 전환 시 현재 anchor를 새 저장소로 옮겨 자연스럽게 이어보기.
+    const cur = rangeMode === 'month' ? monthFromStore : localAnchor
+    if (m === 'month') setMonthInStore(cur)
+    else setLocalAnchor(cur)
+    setRangeModeRaw(m)
+  }
+
+  // 모드별 시작·종료. 'all'은 null로 두고 필터 단계에서 분기.
+  const range = useMemo<{ start: Date; end: Date } | null>(() => {
+    switch (rangeMode) {
+      case 'day':
+        return { start: startOfDay(anchor), end: endOfDay(anchor) }
+      case 'week':
+        return { start: startOfWeek(anchor, WEEK_OPTS), end: endOfWeek(anchor, WEEK_OPTS) }
+      case 'month':
+        return { start: startOfMonth(anchor), end: endOfMonth(anchor) }
+      case 'year':
+        return { start: startOfYear(anchor), end: endOfYear(anchor) }
+      case 'custom': {
+        const s = parseISO(customStart)
+        const e = parseISO(customEnd)
+        const lo = s <= e ? s : e
+        const hi = s <= e ? e : s
+        return { start: startOfDay(lo), end: endOfDay(hi) }
+      }
+      case 'all':
+        return null
+    }
+  }, [rangeMode, anchor, customStart, customEnd])
+
+  const rangeTxns = useMemo(() => {
+    if (!range) return txns
+    return txns.filter((t) => {
+      const d = parseISO(t.date)
+      return d >= range.start && d <= range.end
+    })
+  }, [txns, range])
+
+  const income = rangeTxns.filter((t) => t.type === 'income').reduce((s, t) => s + t.amount, 0)
+  const expense = rangeTxns.filter((t) => t.type === 'expense').reduce((s, t) => s + t.amount, 0)
   const balance = income - expense
 
-  // 6-month trend (current month + previous 5)
+  // 추이 차트 — 모드별로 버킷 단위를 자동 선택.
   const trendData = useMemo(() => {
-    const months = eachMonthOfInterval({
-      start: subMonths(startOfMonth(month), 5),
-      end: startOfMonth(month),
-    })
-    return months.map((m) => {
-      const inMonth = txns.filter((t) => isSameMonth(parseISO(t.date), m))
-      return {
+    type Bucket = { label: string; from: Date; to: Date }
+    let buckets: Bucket[] = []
+
+    if (rangeMode === 'day') {
+      const days = eachDayOfInterval({ start: subDays(anchor, 6), end: anchor })
+      buckets = days.map((d) => ({ label: format(d, 'M/d'), from: startOfDay(d), to: endOfDay(d) }))
+    } else if (rangeMode === 'week') {
+      const weeks = eachWeekOfInterval({ start: subWeeks(anchor, 5), end: anchor }, WEEK_OPTS)
+      buckets = weeks.map((w) => ({
+        label: format(startOfWeek(w, WEEK_OPTS), 'M/d'),
+        from: startOfWeek(w, WEEK_OPTS),
+        to: endOfWeek(w, WEEK_OPTS),
+      }))
+    } else if (rangeMode === 'month') {
+      const months = eachMonthOfInterval({
+        start: subMonths(startOfMonth(anchor), 5),
+        end: startOfMonth(anchor),
+      })
+      buckets = months.map((m) => ({
         label: format(m, 'M월', { locale: ko }),
-        수입: inMonth.filter((t) => t.type === 'income').reduce((s, t) => s + t.amount, 0),
-        지출: inMonth.filter((t) => t.type === 'expense').reduce((s, t) => s + t.amount, 0),
+        from: startOfMonth(m),
+        to: endOfMonth(m),
+      }))
+    } else if (rangeMode === 'year') {
+      const months = eachMonthOfInterval({ start: startOfYear(anchor), end: endOfYear(anchor) })
+      buckets = months.map((m) => ({
+        label: format(m, 'M월', { locale: ko }),
+        from: startOfMonth(m),
+        to: endOfMonth(m),
+      }))
+    } else if (rangeMode === 'custom' && range) {
+      const days = differenceInCalendarDays(range.end, range.start)
+      if (days <= 31) {
+        const list = eachDayOfInterval({ start: range.start, end: range.end })
+        buckets = list.map((d) => ({ label: format(d, 'M/d'), from: startOfDay(d), to: endOfDay(d) }))
+      } else if (days <= 365) {
+        const list = eachMonthOfInterval({ start: range.start, end: range.end })
+        buckets = list.map((m) => ({
+          label: format(m, 'yy/M'),
+          from: startOfMonth(m),
+          to: endOfMonth(m),
+        }))
+      } else {
+        const years = new Set<number>()
+        let cur = startOfYear(range.start)
+        while (cur <= range.end) {
+          years.add(cur.getFullYear())
+          cur = addYears(cur, 1)
+        }
+        buckets = Array.from(years).sort().map((y) => ({
+          label: `${y}`,
+          from: new Date(y, 0, 1),
+          to: new Date(y, 11, 31, 23, 59, 59),
+        }))
+      }
+    } else if (rangeMode === 'all' && txns.length > 0) {
+      const years = new Set<number>()
+      for (const t of txns) years.add(parseISO(t.date).getFullYear())
+      buckets = Array.from(years).sort().map((y) => ({
+        label: `${y}`,
+        from: new Date(y, 0, 1),
+        to: new Date(y, 11, 31, 23, 59, 59),
+      }))
+    }
+
+    return buckets.map((b) => {
+      const slice = txns.filter((t) => {
+        const d = parseISO(t.date)
+        return d >= b.from && d <= b.to
+      })
+      return {
+        label: b.label,
+        수입: slice.filter((t) => t.type === 'income').reduce((s, t) => s + t.amount, 0),
+        지출: slice.filter((t) => t.type === 'expense').reduce((s, t) => s + t.amount, 0),
       }
     })
-  }, [txns, month])
+  }, [rangeMode, anchor, range, txns])
 
-  // category pie (expenses for selected month)
+  const trendTitle =
+    rangeMode === 'day' ? '최근 7일 추이'
+    : rangeMode === 'week' ? '최근 6주 추이'
+    : rangeMode === 'month' ? '최근 6개월 추이'
+    : rangeMode === 'year' ? `${format(anchor, 'yyyy년')} 월별 추이`
+    : rangeMode === 'custom' ? '기간 내 추이'
+    : '연도별 추이'
+
+  // 카테고리 파이 (선택 기간 내 지출)
   const pieData = useMemo(
     () =>
       Object.entries(
-        monthTxns
+        rangeTxns
           .filter((t) => t.type === 'expense')
           .reduce(
             (acc, t) => ({ ...acc, [t.category]: (acc[t.category] ?? 0) + t.amount }),
@@ -124,13 +278,13 @@ export function BudgetDetail() {
       )
         .map(([name, value]) => ({ name, value }))
         .sort((a, b) => b.value - a.value),
-    [monthTxns]
+    [rangeTxns]
   )
 
-  // filtered + sorted transactions
+  // 필터 + 정렬 거래 목록
   const filteredTxns = useMemo(() => {
     const q = search.trim().toLowerCase()
-    let list = monthTxns
+    let list = rangeTxns
     if (typeFilter !== 'all') list = list.filter((t) => t.type === typeFilter)
     if (categoryFilter !== 'all') list = list.filter((t) => t.category === categoryFilter)
     if (q) list = list.filter((t) => t.description.toLowerCase().includes(q))
@@ -149,12 +303,23 @@ export function BudgetDetail() {
         sorted.sort((a, b) => b.date.localeCompare(a.date))
     }
     return sorted
-  }, [monthTxns, typeFilter, categoryFilter, search, sortMode])
+  }, [rangeTxns, typeFilter, categoryFilter, search, sortMode])
 
   const availableCategories = useMemo(() => {
-    const set = new Set(monthTxns.map((t) => t.category))
+    const set = new Set(rangeTxns.map((t) => t.category))
     return ['all', ...Array.from(set)]
-  }, [monthTxns])
+  }, [rangeTxns])
+
+  const resetForm = () => {
+    setForm({
+      type: 'expense',
+      amount: '',
+      category: '식비',
+      description: '',
+      date: format(new Date(), 'yyyy-MM-dd'),
+    })
+    setEditingId(null)
+  }
 
   const submit = () => {
     if (!form.amount || !form.description) return
@@ -165,26 +330,183 @@ export function BudgetDetail() {
       description: form.description,
       date: form.date,
     })
-    setForm({
-      type: 'expense',
-      amount: '',
-      category: '식비',
-      description: '',
-      date: format(month, 'yyyy-MM-dd'),
-    })
+    resetForm()
     setOpen(false)
   }
 
-  const monthLabel = format(month, 'yyyy년 M월', { locale: ko })
+  const [editForm, setEditForm] = useState({
+    type: 'expense' as 'income' | 'expense',
+    amount: '',
+    category: '식비',
+    description: '',
+    date: format(new Date(), 'yyyy-MM-dd'),
+  })
+
+  const startEdit = (id: string) => {
+    const t = txns.find((x) => x.id === id)
+    if (!t) return
+    setEditForm({
+      type: t.type,
+      amount: String(t.amount),
+      category: t.category,
+      description: t.description,
+      date: t.date,
+    })
+    setEditingId(id)
+  }
+
+  const submitEdit = () => {
+    if (!editingId || !editForm.amount || !editForm.description) return
+    updateTransaction.mutate({
+      id: editingId,
+      patch: {
+        amount: Number(editForm.amount),
+        type: editForm.type,
+        category: editForm.category,
+        description: editForm.description,
+        date: editForm.date,
+      },
+    })
+    setEditingId(null)
+  }
+
+  const cancelForm = () => {
+    resetForm()
+    setOpen(false)
+  }
+
+  const confirmDeleteTxn = txns.find((t) => t.id === confirmDeleteId) ?? null
+
+  const rangeLabel = (() => {
+    if (rangeMode === 'all') return '전체 기간'
+    if (rangeMode === 'custom' && range) {
+      return `${format(range.start, 'yyyy.M.d')} ~ ${format(range.end, 'yyyy.M.d')}`
+    }
+    if (!range) return ''
+    switch (rangeMode) {
+      case 'day':
+        return format(anchor, 'yyyy년 M월 d일 (E)', { locale: ko })
+      case 'week':
+        return `${format(range.start, 'M월 d일')} - ${format(range.end, 'M월 d일')}`
+      case 'month':
+        return format(anchor, 'yyyy년 M월', { locale: ko })
+      case 'year':
+        return format(anchor, 'yyyy년', { locale: ko })
+      default:
+        return ''
+    }
+  })()
+
+  const rangeSpan = (() => {
+    if (!range) return ''
+    if (rangeMode === 'day') return format(range.start, 'EEEE', { locale: ko })
+    return `${format(range.start, 'M/d')} ~ ${format(range.end, 'M/d')}`
+  })()
+
+  const goPrev = () => {
+    switch (rangeMode) {
+      case 'day': return setAnchor(subDays(anchor, 1))
+      case 'week': return setAnchor(subWeeks(anchor, 1))
+      case 'month': return setAnchor(subMonths(anchor, 1))
+      case 'year': return setAnchor(subYears(anchor, 1))
+    }
+  }
+  const goNext = () => {
+    switch (rangeMode) {
+      case 'day': return setAnchor(addDays(anchor, 1))
+      case 'week': return setAnchor(addWeeks(anchor, 1))
+      case 'month': return setAnchor(addMonths(anchor, 1))
+      case 'year': return setAnchor(addYears(anchor, 1))
+    }
+  }
+  const hasNavButtons = rangeMode === 'day' || rangeMode === 'week' || rangeMode === 'month' || rangeMode === 'year'
+
+  // 팝오버를 열 때 현재 선택을 picker에 반영해 자연스럽게 이어보기.
+  const openPopover = () => {
+    if (range) {
+      setPickerStart(range.start)
+      setPickerEnd(rangeMode === 'day' ? null : range.end)
+      setPickerMonth(range.start)
+    } else {
+      setPickerStart(null)
+      setPickerEnd(null)
+      setPickerMonth(new Date())
+    }
+    setPopoverOpen(true)
+  }
+
+  const handleDateClick = (d: Date) => {
+    // 두 번째 클릭으로 종료일 지정. 그 외엔 새로 시작.
+    if (!pickerStart || (pickerStart && pickerEnd)) {
+      setPickerStart(d)
+      setPickerEnd(null)
+      return
+    }
+    if (d < pickerStart) {
+      setPickerEnd(pickerStart)
+      setPickerStart(d)
+    } else {
+      setPickerEnd(d)
+    }
+  }
+
+  const applyPicker = () => {
+    if (!pickerStart) {
+      setPopoverOpen(false)
+      return
+    }
+    const end = pickerEnd ?? pickerStart
+    if (pickerStart.getTime() === end.getTime()) {
+      // 단일 날짜 → day 모드
+      setLocalAnchor(pickerStart)
+      setRangeMode('day')
+    } else {
+      setCustomStart(format(pickerStart, 'yyyy-MM-dd'))
+      setCustomEnd(format(end, 'yyyy-MM-dd'))
+      setRangeMode('custom')
+    }
+    setPopoverOpen(false)
+  }
+
+  const applyPreset = (preset: 'today' | 'week' | 'month' | 'year' | 'all') => {
+    const today = new Date()
+    if (preset === 'all') {
+      setRangeMode('all')
+    } else if (preset === 'today') {
+      setLocalAnchor(today)
+      setRangeMode('day')
+    } else {
+      setLocalAnchor(today)
+      if (rangeMode !== preset) setRangeMode(preset)
+      else setAnchor(today)
+    }
+    setPopoverOpen(false)
+  }
+
+  const calendarDays = useMemo(() => {
+    const start = startOfWeek(startOfMonth(pickerMonth), WEEK_OPTS)
+    const end = endOfWeek(endOfMonth(pickerMonth), WEEK_OPTS)
+    return eachDayOfInterval({ start, end })
+  }, [pickerMonth])
+
+  const isInPickerRange = (d: Date) => {
+    if (!pickerStart) return false
+    const end = pickerEnd ?? pickerStart
+    return d >= startOfDay(pickerStart) && d <= endOfDay(end)
+  }
 
   return (
     <WidgetDetailLayout
       title="가계부"
-      subtitle="월별 수입/지출 추이와 전체 거래 내역"
+      kicker="BUDGET"
+      subtitle="원하는 기간으로 수입/지출 추이와 거래 내역을 확인"
       accent="#3182F6"
       actions={
         <button
-          onClick={() => setOpen((o) => !o)}
+          onClick={() => {
+            if (open) cancelForm()
+            else setOpen(true)
+          }}
           className={cn(
             'flex items-center gap-1.5 h-9 px-3.5 rounded-xl transition-all cursor-pointer text-[13px] font-medium',
             open
@@ -197,28 +519,55 @@ export function BudgetDetail() {
         </button>
       }
     >
-      {/* month switcher */}
-      <div className="flex items-center justify-between mb-5">
-        <div className="flex items-center gap-1">
+      {/* range picker — single trigger, opens calendar popover */}
+      <div className="flex items-center gap-2 mb-5">
+        {hasNavButtons && (
           <button
-            onClick={() => setMonth(subMonths(month, 1))}
-            className="w-9 h-9 flex items-center justify-center rounded-xl text-[#8E8E93] hover:text-white hover:bg-white/[0.06] transition-colors cursor-pointer"
+            onClick={goPrev}
+            className="w-9 h-9 flex items-center justify-center rounded-xl shrink-0 transition-colors cursor-pointer"
+            style={{ background: CARD_BG, border: `1px solid ${BORDER}`, color: '#8E8E93' }}
+            onMouseEnter={(e) => (e.currentTarget.style.color = '#F2F2F7')}
+            onMouseLeave={(e) => (e.currentTarget.style.color = '#8E8E93')}
+            aria-label="이전"
           >
-            <ChevronLeft size={16} />
+            <ChevronLeft size={15} />
           </button>
-          <p className="text-[15px] font-semibold tracking-tight px-2" style={{ color: '#F2F2F7' }}>
-            {monthLabel}
-          </p>
+        )}
+        <button
+          onClick={openPopover}
+          className="flex items-center justify-between gap-3 flex-1 h-9 px-3.5 rounded-xl transition-colors cursor-pointer"
+          style={{ background: CARD_BG, border: `1px solid ${BORDER}` }}
+          onMouseEnter={(e) => (e.currentTarget.style.background = '#222222')}
+          onMouseLeave={(e) => (e.currentTarget.style.background = CARD_BG)}
+        >
+          <div className="flex items-center gap-2 min-w-0">
+            <CalendarIcon size={14} style={{ color: '#3182F6' }} />
+            <p
+              className="text-[13.5px] font-semibold tracking-tight truncate"
+              style={{ color: '#F2F2F7' }}
+            >
+              {rangeLabel}
+            </p>
+            {rangeSpan && rangeMode !== 'day' && rangeMode !== 'all' && rangeMode !== 'custom' && (
+              <p className="hidden sm:block text-[11.5px]" style={{ color: '#636366' }}>
+                · {rangeSpan}
+              </p>
+            )}
+          </div>
+          <ChevronDown size={14} style={{ color: '#8E8E93' }} />
+        </button>
+        {hasNavButtons && (
           <button
-            onClick={() => setMonth(addMonths(month, 1))}
-            className="w-9 h-9 flex items-center justify-center rounded-xl text-[#8E8E93] hover:text-white hover:bg-white/[0.06] transition-colors cursor-pointer"
+            onClick={goNext}
+            className="w-9 h-9 flex items-center justify-center rounded-xl shrink-0 transition-colors cursor-pointer"
+            style={{ background: CARD_BG, border: `1px solid ${BORDER}`, color: '#8E8E93' }}
+            onMouseEnter={(e) => (e.currentTarget.style.color = '#F2F2F7')}
+            onMouseLeave={(e) => (e.currentTarget.style.color = '#8E8E93')}
+            aria-label="다음"
           >
-            <ChevronRight size={16} />
+            <ChevronRight size={15} />
           </button>
-        </div>
-        <p className="text-[12px]" style={{ color: '#636366' }}>
-          {format(startOfMonth(month), 'M/d')} ~ {format(endOfMonth(month), 'M/d')}
-        </p>
+        )}
       </div>
 
       {/* add form */}
@@ -296,8 +645,51 @@ export function BudgetDetail() {
         </div>
       )}
 
-      {/* summary cards */}
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-4 mb-6">
+      {/* summary — mobile: combined card / desktop: 3 cards */}
+      <div
+        className="sm:hidden rounded-2xl p-5 mb-6"
+        style={{ background: CARD_BG, border: `1px solid ${BORDER}` }}
+      >
+        <div className="flex items-center gap-2 mb-2" style={{ color: '#8E8E93' }}>
+          <Wallet size={14} />
+          <p className="text-[12px] font-medium tracking-wide">잔액</p>
+        </div>
+        <p
+          className="text-[28px] font-semibold tabular-nums tracking-tight mb-4"
+          style={{ color: balance >= 0 ? '#F2F2F7' : '#FF453A' }}
+        >
+          {formatKRW(balance)}
+        </p>
+        <div
+          className="grid grid-cols-2 gap-3 pt-4"
+          style={{ borderTop: `1px solid ${BORDER}` }}
+        >
+          <div>
+            <div className="flex items-center gap-1.5 mb-1" style={{ color: '#05D686' }}>
+              <TrendingUp size={12} />
+              <p className="text-[11px] font-medium" style={{ color: '#8E8E93' }}>
+                수입
+              </p>
+            </div>
+            <p className="text-[15px] font-semibold tabular-nums" style={{ color: '#05D686' }}>
+              +{formatKRW(income)}
+            </p>
+          </div>
+          <div>
+            <div className="flex items-center gap-1.5 mb-1" style={{ color: '#FF453A' }}>
+              <TrendingDown size={12} />
+              <p className="text-[11px] font-medium" style={{ color: '#8E8E93' }}>
+                지출
+              </p>
+            </div>
+            <p className="text-[15px] font-semibold tabular-nums" style={{ color: '#FF453A' }}>
+              -{formatKRW(expense)}
+            </p>
+          </div>
+        </div>
+      </div>
+
+      <div className="hidden sm:grid grid-cols-3 gap-4 mb-6">
         {[
           {
             label: '수입',
@@ -318,7 +710,7 @@ export function BudgetDetail() {
             value: balance,
             color: balance >= 0 ? '#F2F2F7' : '#FF453A',
             icon: <Wallet size={16} />,
-            prefix: balance >= 0 ? '' : '',
+            prefix: '',
           },
         ].map((c) => (
           <div
@@ -333,7 +725,7 @@ export function BudgetDetail() {
               </p>
             </div>
             <p
-              className="text-[22px] sm:text-[26px] font-semibold tabular-nums tracking-tight"
+              className="text-[26px] font-semibold tabular-nums tracking-tight"
               style={{ color: c.color }}
             >
               {c.prefix}
@@ -351,7 +743,7 @@ export function BudgetDetail() {
           style={{ background: CARD_BG, border: `1px solid ${BORDER}` }}
         >
           <p className="text-[13px] font-medium mb-4" style={{ color: '#F2F2F7' }}>
-            최근 6개월 추이
+            {trendTitle}
           </p>
           <div className="h-56">
             <ResponsiveContainer width="100%" height="100%">
@@ -541,7 +933,7 @@ export function BudgetDetail() {
                 조건에 맞는 내역이 없습니다
               </p>
               <p className="text-[12px]" style={{ color: '#636366' }}>
-                {monthTxns.length === 0
+                {rangeTxns.length === 0
                   ? '+ 추가 버튼으로 첫 거래를 기록해보세요'
                   : '필터를 조정해보세요'}
               </p>
@@ -586,15 +978,28 @@ export function BudgetDetail() {
                       {t.type === 'income' ? '+' : '-'}
                       {formatKRW(t.amount)}
                     </p>
-                    <button
-                      onClick={() => deleteTransaction.mutate(t.id)}
-                      className="opacity-0 group-hover:opacity-100 p-1.5 transition-all cursor-pointer rounded-lg"
-                      style={{ color: '#636366' }}
-                      onMouseEnter={(e) => (e.currentTarget.style.color = '#FF453A')}
-                      onMouseLeave={(e) => (e.currentTarget.style.color = '#636366')}
-                    >
-                      <Trash2 size={14} />
-                    </button>
+                    <div className="flex items-center gap-0.5 opacity-100 sm:opacity-0 sm:group-hover:opacity-100 transition-all">
+                      <button
+                        onClick={() => startEdit(t.id)}
+                        className="p-1.5 transition-colors cursor-pointer rounded-lg"
+                        style={{ color: '#636366' }}
+                        onMouseEnter={(e) => (e.currentTarget.style.color = '#3182F6')}
+                        onMouseLeave={(e) => (e.currentTarget.style.color = '#636366')}
+                        aria-label="수정"
+                      >
+                        <Pencil size={14} />
+                      </button>
+                      <button
+                        onClick={() => setConfirmDeleteId(t.id)}
+                        className="p-1.5 transition-colors cursor-pointer rounded-lg"
+                        style={{ color: '#636366' }}
+                        onMouseEnter={(e) => (e.currentTarget.style.color = '#FF453A')}
+                        onMouseLeave={(e) => (e.currentTarget.style.color = '#636366')}
+                        aria-label="삭제"
+                      >
+                        <Trash2 size={14} />
+                      </button>
+                    </div>
                   </div>
                 </div>
               ))}
@@ -609,10 +1014,408 @@ export function BudgetDetail() {
             style={{ borderTop: `1px solid ${BORDER}`, color: '#636366' }}
           >
             총 <span style={{ color: '#AEAEB2' }}>{filteredTxns.length}건</span>
-            {filteredTxns.length !== monthTxns.length && ` (전체 ${monthTxns.length}건 중)`}
+            {filteredTxns.length !== rangeTxns.length && ` (전체 ${rangeTxns.length}건 중)`}
           </div>
         )}
       </div>
+
+      {/* range picker popover */}
+      {popoverOpen && (
+        <div
+          className="fixed inset-0 z-50 flex items-start sm:items-center justify-center p-4 pt-16 sm:pt-4"
+          style={{ background: 'rgba(0,0,0,0.6)', backdropFilter: 'blur(4px)' }}
+          onClick={() => setPopoverOpen(false)}
+        >
+          <div
+            className="w-full max-w-sm rounded-2xl overflow-hidden fade-up"
+            style={{ background: CARD_BG, border: `1px solid ${BORDER}` }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            {/* presets */}
+            <div
+              className="flex flex-wrap gap-1.5 p-3"
+              style={{ borderBottom: `1px solid ${BORDER}` }}
+            >
+              {([
+                { key: 'today', label: '오늘' },
+                { key: 'week', label: '이번 주' },
+                { key: 'month', label: '이번 달' },
+                { key: 'year', label: '올해' },
+                { key: 'all', label: '전체' },
+              ] as const).map((p) => (
+                <button
+                  key={p.key}
+                  onClick={() => applyPreset(p.key)}
+                  className="px-3 h-7 rounded-lg text-[12px] font-medium transition-colors cursor-pointer"
+                  style={{ background: 'rgba(255,255,255,0.06)', color: '#AEAEB2' }}
+                  onMouseEnter={(e) => {
+                    e.currentTarget.style.background = 'rgba(49,130,246,0.16)'
+                    e.currentTarget.style.color = '#3182F6'
+                  }}
+                  onMouseLeave={(e) => {
+                    e.currentTarget.style.background = 'rgba(255,255,255,0.06)'
+                    e.currentTarget.style.color = '#AEAEB2'
+                  }}
+                >
+                  {p.label}
+                </button>
+              ))}
+            </div>
+
+            {/* month nav */}
+            <div className="flex items-center justify-between px-3 pt-3 pb-1">
+              <button
+                onClick={() => setPickerMonth((m) => subMonths(m, 1))}
+                className="w-8 h-8 flex items-center justify-center rounded-lg transition-colors cursor-pointer"
+                style={{ color: '#8E8E93' }}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.color = '#F2F2F7'
+                  e.currentTarget.style.background = 'rgba(255,255,255,0.06)'
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.color = '#8E8E93'
+                  e.currentTarget.style.background = 'transparent'
+                }}
+                aria-label="이전 달"
+              >
+                <ChevronLeft size={15} />
+              </button>
+              <p className="text-[13.5px] font-semibold tracking-tight" style={{ color: '#F2F2F7' }}>
+                {format(pickerMonth, 'yyyy년 M월', { locale: ko })}
+              </p>
+              <button
+                onClick={() => setPickerMonth((m) => addMonths(m, 1))}
+                className="w-8 h-8 flex items-center justify-center rounded-lg transition-colors cursor-pointer"
+                style={{ color: '#8E8E93' }}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.color = '#F2F2F7'
+                  e.currentTarget.style.background = 'rgba(255,255,255,0.06)'
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.color = '#8E8E93'
+                  e.currentTarget.style.background = 'transparent'
+                }}
+                aria-label="다음 달"
+              >
+                <ChevronRight size={15} />
+              </button>
+            </div>
+
+            {/* weekday header */}
+            <div className="grid grid-cols-7 gap-1 px-3 pb-1">
+              {['월', '화', '수', '목', '금', '토', '일'].map((d, i) => (
+                <div
+                  key={d}
+                  className="h-7 flex items-center justify-center text-[11px] font-medium"
+                  style={{ color: i === 5 ? '#60A5FA' : i === 6 ? '#FF8A80' : '#636366' }}
+                >
+                  {d}
+                </div>
+              ))}
+            </div>
+
+            {/* days grid */}
+            <div className="grid grid-cols-7 gap-1 px-3 pb-3">
+              {calendarDays.map((d) => {
+                const inMonth = d.getMonth() === pickerMonth.getMonth()
+                const inRange = isInPickerRange(d)
+                const isStart = pickerStart && d.toDateString() === pickerStart.toDateString()
+                const isEnd = pickerEnd && d.toDateString() === pickerEnd.toDateString()
+                const isToday = d.toDateString() === new Date().toDateString()
+                const isEdge = isStart || isEnd
+                return (
+                  <button
+                    key={d.toISOString()}
+                    onClick={() => handleDateClick(d)}
+                    className="relative h-9 flex items-center justify-center text-[13px] tabular-nums rounded-lg transition-colors cursor-pointer"
+                    style={{
+                      background: isEdge
+                        ? '#3182F6'
+                        : inRange
+                          ? 'rgba(49,130,246,0.18)'
+                          : 'transparent',
+                      color: isEdge
+                        ? '#ffffff'
+                        : !inMonth
+                          ? '#3A3A3C'
+                          : inRange
+                            ? '#F2F2F7'
+                            : isToday
+                              ? '#3182F6'
+                              : '#F2F2F7',
+                      fontWeight: isEdge || isToday ? 600 : 400,
+                    }}
+                    onMouseEnter={(e) => {
+                      if (!isEdge && !inRange) e.currentTarget.style.background = 'rgba(255,255,255,0.06)'
+                    }}
+                    onMouseLeave={(e) => {
+                      if (!isEdge && !inRange) e.currentTarget.style.background = 'transparent'
+                    }}
+                  >
+                    {d.getDate()}
+                  </button>
+                )
+              })}
+            </div>
+
+            {/* footer */}
+            <div
+              className="flex items-center justify-between gap-2 px-3 py-3"
+              style={{ borderTop: `1px solid ${BORDER}` }}
+            >
+              <p className="text-[11.5px]" style={{ color: '#8E8E93' }}>
+                {pickerStart
+                  ? pickerEnd && pickerEnd.toDateString() !== pickerStart.toDateString()
+                    ? `${format(pickerStart, 'M월 d일')} ~ ${format(pickerEnd, 'M월 d일')}`
+                    : `${format(pickerStart, 'M월 d일')} (하루)`
+                  : '날짜를 선택하세요'}
+              </p>
+              <div className="flex items-center gap-1.5">
+                <button
+                  onClick={() => setPopoverOpen(false)}
+                  className="px-3 h-8 rounded-lg text-[12px] font-medium transition-colors cursor-pointer"
+                  style={{ background: 'rgba(255,255,255,0.06)', color: '#F2F2F7' }}
+                  onMouseEnter={(e) => (e.currentTarget.style.background = 'rgba(255,255,255,0.1)')}
+                  onMouseLeave={(e) => (e.currentTarget.style.background = 'rgba(255,255,255,0.06)')}
+                >
+                  취소
+                </button>
+                <button
+                  onClick={applyPicker}
+                  disabled={!pickerStart}
+                  className="px-3 h-8 rounded-lg text-[12px] font-medium transition-colors cursor-pointer disabled:cursor-not-allowed disabled:opacity-50"
+                  style={{ background: '#3182F6', color: '#ffffff' }}
+                  onMouseEnter={(e) => { if (pickerStart) e.currentTarget.style.background = '#5c6ecc' }}
+                  onMouseLeave={(e) => { if (pickerStart) e.currentTarget.style.background = '#3182F6' }}
+                >
+                  적용
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* edit modal */}
+      {editingId && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center p-4"
+          style={{ background: 'rgba(0,0,0,0.6)', backdropFilter: 'blur(4px)' }}
+          onClick={() => setEditingId(null)}
+        >
+          <div
+            className="w-full max-w-md rounded-2xl overflow-hidden fade-up"
+            style={{ background: CARD_BG, border: `1px solid ${BORDER}` }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div
+              className="flex items-center justify-between px-5 py-4"
+              style={{ borderBottom: `1px solid ${BORDER}` }}
+            >
+              <p className="text-[15px] font-semibold" style={{ color: '#F2F2F7' }}>
+                거래 내역 수정
+              </p>
+              <button
+                onClick={() => setEditingId(null)}
+                className="p-1 cursor-pointer transition-colors rounded-lg"
+                style={{ color: '#636366' }}
+                onMouseEnter={(e) => (e.currentTarget.style.color = '#F2F2F7')}
+                onMouseLeave={(e) => (e.currentTarget.style.color = '#636366')}
+                aria-label="닫기"
+              >
+                <X size={16} />
+              </button>
+            </div>
+            <div className="flex" style={{ borderBottom: `1px solid ${BORDER}` }}>
+              {(['expense', 'income'] as const).map((t) => (
+                <button
+                  key={t}
+                  onClick={() =>
+                    setEditForm((f) => ({
+                      ...f,
+                      type: t,
+                      category: t === 'income' ? '급여' : '식비',
+                    }))
+                  }
+                  className="flex-1 py-3 transition-all cursor-pointer text-[13px] font-medium"
+                  style={{
+                    background:
+                      editForm.type === t
+                        ? t === 'expense'
+                          ? 'rgba(255,67,58,0.1)'
+                          : 'rgba(5,214,134,0.1)'
+                        : 'transparent',
+                    color:
+                      editForm.type === t
+                        ? t === 'expense'
+                          ? '#FF453A'
+                          : '#05D686'
+                        : '#636366',
+                  }}
+                >
+                  {t === 'expense' ? '지출' : '수입'}
+                </button>
+              ))}
+            </div>
+            <div className="p-4 grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <input
+                type="number"
+                placeholder="금액"
+                value={editForm.amount}
+                onChange={(e) => setEditForm((f) => ({ ...f, amount: e.target.value }))}
+                style={fieldStyle}
+              />
+              <select
+                value={editForm.category}
+                onChange={(e) => setEditForm((f) => ({ ...f, category: e.target.value }))}
+                style={{ ...fieldStyle, cursor: 'pointer' }}
+              >
+                {(editForm.type === 'expense' ? EXP_CATS : INC_CATS).map((c) => (
+                  <option key={c} value={c} style={{ background: '#141730' }}>
+                    {c}
+                  </option>
+                ))}
+              </select>
+              <input
+                placeholder="내용"
+                value={editForm.description}
+                onChange={(e) => setEditForm((f) => ({ ...f, description: e.target.value }))}
+                onKeyDown={(e) => e.key === 'Enter' && submitEdit()}
+                style={fieldStyle}
+              />
+              <input
+                type="date"
+                value={editForm.date}
+                onChange={(e) => setEditForm((f) => ({ ...f, date: e.target.value }))}
+                style={fieldStyle}
+              />
+            </div>
+            <div
+              className="flex gap-2 px-5 py-4"
+              style={{ borderTop: `1px solid ${BORDER}` }}
+            >
+              <button
+                onClick={() => setEditingId(null)}
+                className="flex-1 h-10 rounded-xl transition-colors cursor-pointer text-[13px] font-medium"
+                style={{ background: 'rgba(255,255,255,0.06)', color: '#F2F2F7' }}
+                onMouseEnter={(e) =>
+                  (e.currentTarget.style.background = 'rgba(255,255,255,0.1)')
+                }
+                onMouseLeave={(e) =>
+                  (e.currentTarget.style.background = 'rgba(255,255,255,0.06)')
+                }
+              >
+                취소
+              </button>
+              <button
+                onClick={submitEdit}
+                className="flex-1 h-10 rounded-xl transition-colors cursor-pointer text-[13px] font-medium"
+                style={{ background: '#3182F6', color: '#ffffff' }}
+                onMouseEnter={(e) => (e.currentTarget.style.background = '#5c6ecc')}
+                onMouseLeave={(e) => (e.currentTarget.style.background = '#3182F6')}
+              >
+                수정하기
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* delete confirmation modal */}
+      {confirmDeleteTxn && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center p-4"
+          style={{ background: 'rgba(0,0,0,0.6)', backdropFilter: 'blur(4px)' }}
+          onClick={() => setConfirmDeleteId(null)}
+        >
+          <div
+            className="w-full max-w-sm rounded-2xl overflow-hidden fade-up"
+            style={{ background: CARD_BG, border: `1px solid ${BORDER}` }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div
+              className="flex items-center justify-between px-5 py-4"
+              style={{ borderBottom: `1px solid ${BORDER}` }}
+            >
+              <p className="text-[15px] font-semibold" style={{ color: '#F2F2F7' }}>
+                거래 내역 삭제
+              </p>
+              <button
+                onClick={() => setConfirmDeleteId(null)}
+                className="p-1 cursor-pointer transition-colors rounded-lg"
+                style={{ color: '#636366' }}
+                onMouseEnter={(e) => (e.currentTarget.style.color = '#F2F2F7')}
+                onMouseLeave={(e) => (e.currentTarget.style.color = '#636366')}
+                aria-label="닫기"
+              >
+                <X size={16} />
+              </button>
+            </div>
+            <div className="px-5 py-5">
+              <p className="text-[13px] leading-relaxed mb-4" style={{ color: '#AEAEB2' }}>
+                이 거래 내역을 삭제하시겠어요? 되돌릴 수 없습니다.
+              </p>
+              <div
+                className="rounded-xl p-3.5 mb-2"
+                style={{ background: 'rgba(255,255,255,0.04)', border: `1px solid ${BORDER}` }}
+              >
+                <div className="flex items-center justify-between gap-3 mb-1.5">
+                  <p
+                    className="text-[14px] font-medium truncate"
+                    style={{ color: '#F2F2F7' }}
+                  >
+                    {confirmDeleteTxn.description}
+                  </p>
+                  <p
+                    className="text-[14px] font-semibold tabular-nums shrink-0"
+                    style={{
+                      color: confirmDeleteTxn.type === 'income' ? '#05D686' : '#F2F2F7',
+                    }}
+                  >
+                    {confirmDeleteTxn.type === 'income' ? '+' : '-'}
+                    {formatKRW(confirmDeleteTxn.amount)}
+                  </p>
+                </div>
+                <p className="text-[12px]" style={{ color: '#8E8E93' }}>
+                  {confirmDeleteTxn.category}
+                  <span style={{ margin: '0 6px', opacity: 0.4 }}>·</span>
+                  {formatDate(confirmDeleteTxn.date)}
+                </p>
+              </div>
+            </div>
+            <div
+              className="flex gap-2 px-5 py-4"
+              style={{ borderTop: `1px solid ${BORDER}` }}
+            >
+              <button
+                onClick={() => setConfirmDeleteId(null)}
+                className="flex-1 h-10 rounded-xl transition-colors cursor-pointer text-[13px] font-medium"
+                style={{ background: 'rgba(255,255,255,0.06)', color: '#F2F2F7' }}
+                onMouseEnter={(e) =>
+                  (e.currentTarget.style.background = 'rgba(255,255,255,0.1)')
+                }
+                onMouseLeave={(e) =>
+                  (e.currentTarget.style.background = 'rgba(255,255,255,0.06)')
+                }
+              >
+                취소
+              </button>
+              <button
+                onClick={() => {
+                  deleteTransaction.mutate(confirmDeleteTxn.id)
+                  setConfirmDeleteId(null)
+                }}
+                className="flex-1 h-10 rounded-xl transition-colors cursor-pointer text-[13px] font-medium"
+                style={{ background: '#FF453A', color: '#ffffff' }}
+                onMouseEnter={(e) => (e.currentTarget.style.background = '#E03A30')}
+                onMouseLeave={(e) => (e.currentTarget.style.background = '#FF453A')}
+              >
+                삭제
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </WidgetDetailLayout>
   )
 }

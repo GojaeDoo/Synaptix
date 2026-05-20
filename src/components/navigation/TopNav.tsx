@@ -49,7 +49,7 @@ export function TopNav() {
   }
 
   return (
-    <header className="sticky top-0 z-30 bg-[#0F0F0F] border-b border-[#1F1F1F]">
+    <header className="sticky top-0 z-30 bg-[#0F0F0F] border-b border-[#1F1F1F] safe-top">
       <div className="flex items-center justify-between h-12 px-4 sm:px-6 lg:px-8">
 
         {/* Brand + breadcrumb */}

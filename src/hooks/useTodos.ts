@@ -13,6 +13,7 @@ export function useTodos() {
   const demoTodos = useDemoStore((s) => s.todos)
   const demoAdd = useDemoStore((s) => s.addTodo)
   const demoToggle = useDemoStore((s) => s.toggleTodo)
+  const demoUpdate = useDemoStore((s) => s.updateTodo)
   const demoDelete = useDemoStore((s) => s.deleteTodo)
 
   const supabaseQuery = useQuery({
@@ -55,6 +56,18 @@ export function useTodos() {
     onError: (e) => console.error('[todos.toggle]', e),
   })
 
+  const updateTodo = useMutation({
+    mutationFn: async (args: { id: string; patch: Partial<Omit<Todo, 'id' | 'created_at'>> }) => {
+      if (!session) return demoUpdate(args)
+      const { error } = await supabase.from('todos').update(args.patch).eq('id', args.id)
+      if (error) throw error
+    },
+    onSuccess: () => {
+      if (session) qc.invalidateQueries({ queryKey: ['todos'] })
+    },
+    onError: (e) => console.error('[todos.update]', e),
+  })
+
   const deleteTodo = useMutation({
     mutationFn: async (id: string) => {
       if (!session) return demoDelete(id)
@@ -74,6 +87,7 @@ export function useTodos() {
     error: session ? supabaseQuery.error : null,
     addTodo,
     toggleTodo,
+    updateTodo,
     deleteTodo,
   }
 }

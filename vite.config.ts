@@ -11,6 +11,7 @@ const GEMINI_URL = 'https://generativelanguage.googleapis.com/v1beta/openai/chat
 const MODEL = 'gemini-2.5-flash'
 
 const WEATHER_BASE = 'https://api.openweathermap.org/data/2.5'
+const GEO_BASE = 'https://api.openweathermap.org/geo/1.0'
 const FINNHUB_BASE = 'https://finnhub.io/api/v1'
 const HN_BASE = 'https://hacker-news.firebaseio.com/v0'
 const COINGECKO_URL =
@@ -63,8 +64,20 @@ function localWeatherApi(key: string | undefined): PluginOption {
           const lat = url.searchParams.get('lat')
           const lon = url.searchParams.get('lon')
 
+          // 한글 도시명 등은 /weather?q=...로 404가 흔해서 geocoding 경유가 필요.
+          if (type === 'geocode') {
+            if (!city) return sendJson(res, 400, { error: 'city required' })
+            const params = new URLSearchParams({ q: city, limit: '1', appid: key })
+            const r = await fetch(`${GEO_BASE}/direct?${params}`)
+            const text = await r.text()
+            res.statusCode = r.status
+            res.setHeader('Content-Type', 'application/json')
+            res.end(text)
+            return
+          }
+
           if (type !== 'current' && type !== 'forecast') {
-            return sendJson(res, 400, { error: 'type must be "current" or "forecast"' })
+            return sendJson(res, 400, { error: 'type must be "current", "forecast", or "geocode"' })
           }
           const params = new URLSearchParams({ appid: key, units: 'metric', lang: 'kr' })
           if (lat && lon) {
