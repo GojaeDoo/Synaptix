@@ -317,6 +317,10 @@ async function executeTool(
 
 const MAX_TOOL_ITERATIONS = 5
 
+// 무료 모델(Gemini Flash)의 토큰 비용을 제한하기 위해 API로 보내는 대화 히스토리를
+// 최근 N개로 캡한다. 화면에는 전체가 남지만 모델 컨텍스트에는 최근 맥락만 전달된다.
+const MAX_HISTORY = 20
+
 export function useChatSend() {
   const { addMessage, setLoading, isLoading } = useChatStore()
   const { session } = useAuth()
@@ -329,9 +333,11 @@ export function useChatSend() {
 
     setLoading(true)
     try {
-      const history: ChatMessageBody[] = useChatStore.getState().messages.map((m) => ({
-        role: m.role as 'user' | 'assistant', content: m.content,
-      }))
+      const history: ChatMessageBody[] = useChatStore.getState().messages
+        .slice(-MAX_HISTORY)
+        .map((m) => ({
+          role: m.role as 'user' | 'assistant', content: m.content,
+        }))
       const baseMessages: ChatMessageBody[] = [
         { role: 'system', content: buildSystemPrompt() },
         ...history,

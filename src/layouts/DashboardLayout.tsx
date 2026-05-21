@@ -12,8 +12,7 @@ export function DashboardLayout({ children }: Props) {
       <TopNav />
       <main
         id="main-scroll"
-        className="flex-1 overflow-y-auto overflow-x-hidden pb-4 sm:px-6 lg:px-8 xl:px-10 lg:pb-6"
-        style={{ paddingBottom: 'max(24px, calc(110px + env(safe-area-inset-bottom, 0px)))' }}
+        className="flex-1 overflow-y-auto overflow-x-hidden sm:px-6 lg:px-8 xl:px-10 pb-[calc(110px_+_env(safe-area-inset-bottom,0px))] lg:pb-6"
       >
         {children}
       </main>

@@ -59,7 +59,7 @@ export function CalendarWidget() {
   const done = todos.filter((t) => t.completed)
 
   return (
-    <div id="widget-calendar" className="widget-glass h-full rounded-2xl relative overflow-hidden flex flex-col" style={{ background: BG, backdropFilter: 'blur(20px)', WebkitBackdropFilter: 'blur(20px)' }}>
+    <div id="widget-calendar" className="group/card widget-glass h-full rounded-2xl relative overflow-hidden flex flex-col" style={{ background: BG, backdropFilter: 'blur(20px)', WebkitBackdropFilter: 'blur(20px)' }}>
       <PixelGrid style={{ width: 72, height: 60, top: -6, right: 14, opacity: 0.06 }} />
 
       {/* mobile */}
@@ -68,13 +68,14 @@ export function CalendarWidget() {
         <div className="flex items-center justify-between mb-5">
           <button
             onClick={() => navigate('/widgets/calendar')}
-            className="flex items-center gap-1.5 cursor-pointer group"
+            className="flex items-center gap-1.5 cursor-pointer group -ml-1.5 px-1.5 py-1 rounded-md hover:bg-white/[0.06] transition-colors"
             style={{ background: 'transparent' }}
+            aria-label="할 일 상세 페이지로 이동"
           >
-            <span style={{ fontFamily: PIXEL, fontSize: '8px', color: '#8E8E93', letterSpacing: '0.1em' }} className="group-hover:text-white transition-colors">
+            <span style={{ fontFamily: PIXEL, fontSize: '8px', color: '#8E8E93', letterSpacing: '0.1em' }} className="group-hover:text-white group-hover/card:text-white transition-colors">
               TODO
             </span>
-            <ArrowUpRight size={11} className="text-[#636366] group-hover:text-white transition-colors" />
+            <ArrowUpRight size={13} className="text-[#8E8E93] group-hover:text-white group-hover/card:text-white transition-colors" />
           </button>
           <p style={{ fontFamily: PIXEL, fontSize: '7px', color: '#636366' }}>
             {format(new Date(), 'M월 d일', { locale: ko })}
@@ -143,13 +144,10 @@ export function CalendarWidget() {
             ))}
             <button
               onClick={() => navigate('/widgets/calendar')}
-              className="w-7 h-7 flex items-center justify-center rounded-lg transition-colors cursor-pointer ml-1"
-              style={{ color: '#636366' }}
-              onMouseEnter={(e) => { e.currentTarget.style.color = '#F2F2F7'; e.currentTarget.style.background = 'rgba(255,255,255,0.07)' }}
-              onMouseLeave={(e) => { e.currentTarget.style.color = '#636366'; e.currentTarget.style.background = 'transparent' }}
+              className="w-7 h-7 flex items-center justify-center rounded-lg transition-colors cursor-pointer ml-1 text-[#8E8E93] hover:text-white hover:bg-white/[0.07] group-hover/card:text-white"
               aria-label="할 일 상세"
             >
-              <ArrowUpRight size={13} />
+              <ArrowUpRight size={14} />
             </button>
           </div>
         </div>

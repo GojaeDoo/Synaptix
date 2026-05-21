@@ -63,7 +63,8 @@ export function WeatherWidget() {
 
   const refreshBtn = (
     <button
-      onClick={() => {
+      onClick={(e) => {
+        e.stopPropagation()
         qc.invalidateQueries({ queryKey: ['weather'] })
         qc.invalidateQueries({ queryKey: ['forecast'] })
       }}
@@ -75,19 +76,23 @@ export function WeatherWidget() {
   )
   const weatherLabel = (
     <button
-      onClick={() => navigate('/widgets/weather')}
+      onClick={(e) => { e.stopPropagation(); navigate('/widgets/weather') }}
       aria-label="날씨 상세 페이지로 이동"
       className="flex items-center gap-1.5 cursor-pointer group bg-transparent"
     >
-      <span className="text-[8px] text-t3 tracking-[0.1em] group-hover:text-white transition-colors">
+      <span className="text-[8px] text-t3 tracking-[0.1em] group-hover:text-white group-hover/card:text-white transition-colors">
         WEATHER
       </span>
-      <ArrowUpRight size={11} className="text-t4 group-hover:text-white transition-colors" aria-hidden="true" />
+      <ArrowUpRight size={11} className="text-t4 group-hover:text-white group-hover/card:text-white transition-colors" aria-hidden="true" />
     </button>
   )
 
   return (
-    <div id="widget-weather" className={`h-full rounded-2xl relative overflow-hidden font-pixel ${bgClass}`}>
+    <div
+      id="widget-weather"
+      onClick={() => navigate('/widgets/weather')}
+      className={`group/card h-full rounded-2xl relative overflow-hidden font-pixel cursor-pointer transition-shadow duration-200 hover:ring-1 hover:ring-white/15 ${bgClass}`}
+    >
       <PixelCloud
         className="w-[130px] h-[65px] -top-2 -left-5"
         style={{ opacity: isNight ? 0.14 : 0.24 }}

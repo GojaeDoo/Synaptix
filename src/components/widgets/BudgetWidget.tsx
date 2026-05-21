@@ -95,7 +95,7 @@ export function BudgetWidget() {
   const dayLabel = format(parseISO(selectedDate), 'M월 d일 (E)', { locale: ko })
 
   return (
-    <div id="widget-budget" className="widget-glass h-full rounded-2xl relative overflow-hidden flex flex-col" style={{ background: BG, backdropFilter: 'blur(20px)', WebkitBackdropFilter: 'blur(20px)' }}>
+    <div id="widget-budget" className="group/card widget-glass h-full rounded-2xl relative overflow-hidden flex flex-col" style={{ background: BG, backdropFilter: 'blur(20px)', WebkitBackdropFilter: 'blur(20px)' }}>
       <PixelCoin style={{ width: 56, height: 56, top: 14, right: 18, opacity: 0.07 }} />
 
       {/* mobile */}
@@ -103,13 +103,14 @@ export function BudgetWidget() {
         {/* label — clickable, navigates to detail */}
         <button
           onClick={() => navigate('/widgets/budget')}
-          className="self-start flex items-center gap-1.5 mb-5 cursor-pointer group"
+          className="self-start flex items-center gap-1.5 mb-5 cursor-pointer group -ml-1.5 px-1.5 py-1 rounded-md hover:bg-white/[0.06] transition-colors"
           style={{ background: 'transparent' }}
+          aria-label="가계부 상세 페이지로 이동"
         >
-          <span style={{ fontFamily: PIXEL, fontSize: '8px', color: '#8E8E93', letterSpacing: '0.1em' }} className="group-hover:text-white transition-colors">
+          <span style={{ fontFamily: PIXEL, fontSize: '8px', color: '#8E8E93', letterSpacing: '0.1em' }} className="group-hover:text-white group-hover/card:text-white transition-colors">
             BUDGET
           </span>
-          <ArrowUpRight size={11} className="text-[#636366] group-hover:text-white transition-colors" />
+          <ArrowUpRight size={13} className="text-[#8E8E93] group-hover:text-white group-hover/card:text-white transition-colors" />
         </button>
 
         {/* main: balance */}
@@ -148,13 +149,14 @@ export function BudgetWidget() {
         <div className="flex items-center justify-between" style={{ padding: '18px 20px 0' }}>
           <button
             onClick={() => navigate('/widgets/budget')}
-            className="flex items-center gap-1.5 cursor-pointer group"
+            className="flex items-center gap-1.5 cursor-pointer group -ml-1.5 px-1.5 py-1 rounded-md hover:bg-white/[0.06] transition-colors"
             style={{ background: 'transparent' }}
+            aria-label="가계부 상세 페이지로 이동"
           >
-            <span style={{ fontFamily: PIXEL, fontSize: '8px', color: '#8E8E93', letterSpacing: '0.1em' }} className="group-hover:text-white transition-colors">
+            <span style={{ fontFamily: PIXEL, fontSize: '8px', color: '#8E8E93', letterSpacing: '0.1em' }} className="group-hover:text-white group-hover/card:text-white transition-colors">
               BUDGET
             </span>
-            <ArrowUpRight size={11} className="text-[#636366] group-hover:text-white transition-colors" />
+            <ArrowUpRight size={13} className="text-[#8E8E93] group-hover:text-white group-hover/card:text-white transition-colors" />
           </button>
           <button
             onClick={toggleOpen}

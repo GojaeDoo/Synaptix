@@ -8,10 +8,8 @@ import { NewsWidget } from '@/components/widgets/NewsWidget'
 import { CalendarWidget } from '@/components/widgets/CalendarWidget'
 import { BudgetWidget } from '@/components/widgets/BudgetWidget'
 import { ChatbotWidget } from '@/components/widgets/ChatbotWidget'
-import { MobileChatSheet } from '@/components/widgets/MobileChatSheet'
 import { useWidgetStore, type Layouts } from '@/store/widgetStore'
 import { ErrorBoundary } from '@/components/ErrorBoundary'
-import { DemoModeBanner } from '@/components/DemoModeBanner'
 import { cn } from '@/lib/utils'
 
 import 'react-grid-layout/css/styles.css'
@@ -104,7 +102,6 @@ export function Dashboard() {
   return (
     <DashboardLayout>
       {editMode && <EditModeHint key="hint" />}
-      <DemoModeBanner />
       <div className={cn('px-2 sm:px-0', editMode && 'rgl-editing')}>
         <ResponsiveGridLayout
           className="layout"
@@ -145,8 +142,6 @@ export function Dashboard() {
           ))}
         </ResponsiveGridLayout>
       </div>
-
-      <MobileChatSheet />
     </DashboardLayout>
   )
 }

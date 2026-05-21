@@ -1,77 +1,114 @@
-import { useState, useRef, useEffect } from 'react'
+import { useState, useRef, useEffect, type CSSProperties } from 'react'
 import { Paperclip, Send, Trash2, X } from 'lucide-react'
 import { format } from 'date-fns'
 import { useChatStore } from '@/store/chatStore'
 import { useChatSend } from '@/hooks/useChatSend'
 
-const SUGGESTIONS = ['날씨 위젯 숨겨줘', '할일 추가해줘', '지출 기록해줘']
+const SUGGESTIONS = ['이번 달 지출 분석해줘', '내일 회의 할일 추가해줘', '서울 날씨 어때?']
 
-export function MobileChatSheet() {
+const NAV_HEIGHT = 48 // TopNav h-12
+
+// 반응형 AI 채팅 오버레이.
+// 모바일: 하단 시트(translateY). 데스크톱(lg+): 우측 드로어(translateX, 네비 아래 도킹).
+// 전역(App)에 1회 마운트되며 chatStore.isOpen 으로 열고 닫는다.
+export function ChatPanel() {
   const [input, setInput] = useState('')
+  const [isDesktop, setIsDesktop] = useState(
+    () => typeof window !== 'undefined' && window.matchMedia('(min-width: 1024px)').matches,
+  )
   const { messages, isOpen, isLoading, toggleChat, clearMessages } = useChatStore()
   const { send: sendChat } = useChatSend()
   const bottomRef = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
+    const mq = window.matchMedia('(min-width: 1024px)')
+    const handler = (e: MediaQueryListEvent) => setIsDesktop(e.matches)
+    mq.addEventListener('change', handler)
+    return () => mq.removeEventListener('change', handler)
+  }, [])
+
+  useEffect(() => {
     if (isOpen) bottomRef.current?.scrollIntoView({ behavior: 'smooth' })
   }, [messages, isLoading, isOpen])
 
+  // 모바일 시트는 배경 스크롤을 잠근다. 데스크톱 드로어는 콘텐츠를 계속 쓸 수 있게 잠그지 않는다.
   useEffect(() => {
-    document.body.style.overflow = isOpen ? 'hidden' : ''
+    document.body.style.overflow = isOpen && !isDesktop ? 'hidden' : ''
     return () => { document.body.style.overflow = '' }
-  }, [isOpen])
+  }, [isOpen, isDesktop])
+
+  // Esc 로 닫기.
+  useEffect(() => {
+    if (!isOpen) return
+    const onKey = (e: KeyboardEvent) => { if (e.key === 'Escape') toggleChat() }
+    document.addEventListener('keydown', onKey)
+    return () => document.removeEventListener('keydown', onKey)
+  }, [isOpen, toggleChat])
 
   const send = (text: string) => {
     setInput('')
     void sendChat(text)
   }
 
+  const panelStyle: CSSProperties = isDesktop
+    ? {
+        position: 'fixed',
+        top: NAV_HEIGHT, right: 0, bottom: 0,
+        zIndex: 50,
+        width: 'min(420px, 100vw)',
+        background: '#1A1A1A',
+        borderLeft: '1px solid #2C2C2E',
+        display: 'flex',
+        flexDirection: 'column',
+        transform: isOpen ? 'translateX(0)' : 'translateX(100%)',
+        transition: 'transform 0.3s ease',
+        boxShadow: isOpen ? '-12px 0 40px rgba(0,0,0,0.45)' : 'none',
+      }
+    : {
+        position: 'fixed',
+        left: 0, right: 0, bottom: 0,
+        zIndex: 50,
+        height: '82dvh',
+        background: '#1A1A1A',
+        borderRadius: '24px 24px 0 0',
+        display: 'flex',
+        flexDirection: 'column',
+        transform: isOpen ? 'translateY(0)' : 'translateY(100%)',
+        transition: 'transform 0.3s ease',
+        paddingBottom: 'env(safe-area-inset-bottom, 0px)',
+      }
+
   return (
     <>
-      {/* 백드롭 — 마우스 사용자용 닫기 영역. 키보드 사용자는 시트 내 X 버튼 사용. */}
-      <div
-        onClick={toggleChat}
-        aria-hidden="true"
-        style={{
-          position: 'fixed', inset: 0, zIndex: 40,
-          background: 'rgba(0,0,0,0.6)',
-          backdropFilter: 'blur(4px)',
-          opacity: isOpen ? 1 : 0,
-          pointerEvents: isOpen ? 'auto' : 'none',
-          transition: 'opacity 0.3s ease',
-        }}
-        className="lg:hidden"
-      />
+      {/* 백드롭 — 모바일 전용. 데스크톱 드로어는 콘텐츠를 가리지 않도록 스크림을 두지 않는다. */}
+      {!isDesktop && (
+        <div
+          onClick={toggleChat}
+          aria-hidden="true"
+          style={{
+            position: 'fixed', inset: 0, zIndex: 40,
+            background: 'rgba(0,0,0,0.6)',
+            backdropFilter: 'blur(4px)',
+            opacity: isOpen ? 1 : 0,
+            pointerEvents: isOpen ? 'auto' : 'none',
+            transition: 'opacity 0.3s ease',
+          }}
+        />
+      )}
 
-      {/* 시트 */}
-      <div
-        style={{
-          position: 'fixed',
-          left: 0, right: 0, bottom: 0,
-          zIndex: 50,
-          height: '82dvh',
-          background: '#1A1A1A',
-          borderRadius: '24px 24px 0 0',
-          display: 'flex',
-          flexDirection: 'column',
-          transform: isOpen ? 'translateY(0)' : 'translateY(100%)',
-          transition: 'transform 0.3s ease',
-          paddingBottom: 'env(safe-area-inset-bottom, 0px)',
-        }}
-        className="lg:hidden"
-      >
-        {/* 드래그 핸들 */}
-        <div style={{ display: 'flex', justifyContent: 'center', padding: '12px 0 8px' }}>
-          <div style={{ width: 36, height: 4, borderRadius: 2, background: '#3A3A3C' }} />
-        </div>
+      {/* 패널 (모바일 시트 / 데스크톱 드로어) */}
+      <div style={panelStyle} role="dialog" aria-label="Synaptix AI 채팅" aria-hidden={!isOpen}>
+        {/* 드래그 핸들 — 모바일 시트에서만 */}
+        {!isDesktop && (
+          <div style={{ display: 'flex', justifyContent: 'center', padding: '12px 0 8px' }}>
+            <div style={{ width: 36, height: 4, borderRadius: 2, background: '#3A3A3C' }} />
+          </div>
+        )}
 
         {/* 헤더 */}
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '12px 20px 14px' }}>
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: isDesktop ? '16px 20px 14px' : '12px 20px 14px' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-            <div style={{
-              width: 8, height: 8, borderRadius: '50%',
-              background: '#30D158',
-            }} />
+            <div style={{ width: 8, height: 8, borderRadius: '50%', background: '#30D158' }} />
             <span style={{ fontSize: 14, fontWeight: 600, color: '#F2F2F7' }}>Synaptix AI</span>
             <span style={{ fontSize: 11, color: '#636366' }}>gemini-2.5</span>
           </div>

@@ -123,7 +123,7 @@ export async function fetchWeatherSmart(city: string): Promise<WeatherData> {
   } catch (e) {
     if (e instanceof ConfigError) throw e
     const geo = await geocodeCity(city)
-    if (!geo) throw new Error(`'${city}' 위치를 찾지 못했습니다`)
+    if (!geo) throw new Error(`'${city}' 위치를 찾지 못했습니다`, { cause: e })
     const data = await fetchWeatherByCoords(geo.lat, geo.lon)
     return { ...data, city: geo.name }
   }

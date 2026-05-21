@@ -1,5 +1,6 @@
 import { Ratelimit } from '@upstash/ratelimit'
 import { Redis } from '@upstash/redis'
+import { validateChatPayload } from './_chat-validation'
 
 export const config = { runtime: 'edge' }
 
@@ -74,15 +75,24 @@ export default async function handler(req: Request): Promise<Response> {
     }
   }
 
-  let body: { messages?: unknown[]; tools?: unknown[] }
+  let rawBody: unknown
   try {
-    body = await req.json()
+    rawBody = await req.json()
   } catch {
     return new Response(JSON.stringify({ error: 'Invalid JSON' }), {
       status: 400,
       headers: { 'Content-Type': 'application/json' },
     })
   }
+
+  const valid = validateChatPayload(rawBody)
+  if (!valid.ok) {
+    return new Response(JSON.stringify({ error: { message: valid.message } }), {
+      status: valid.status,
+      headers: { 'Content-Type': 'application/json' },
+    })
+  }
+  const { messages, tools } = valid.value
 
   const callApi = async (withTools: boolean) =>
     fetch(GEMINI_URL, {
@@ -93,8 +103,8 @@ export default async function handler(req: Request): Promise<Response> {
       },
       body: JSON.stringify({
         model: MODEL,
-        messages: body.messages,
-        ...(withTools && body.tools ? { tools: body.tools, tool_choice: 'auto' } : {}),
+        messages,
+        ...(withTools && tools ? { tools, tool_choice: 'auto' } : {}),
       }),
     })
 
@@ -112,7 +122,7 @@ export default async function handler(req: Request): Promise<Response> {
   }
 
   // tool call이 실패하면 tool 없이 한 번 더 호출해 텍스트 응답으로 폴백
-  if (!res.ok && body.tools && res.status >= 400 && res.status < 500 && res.status !== 429) {
+  if (!res.ok && tools && res.status >= 400 && res.status < 500 && res.status !== 429) {
     const retry = await callApi(false)
     if (retry.ok) {
       data = await retry.text()

@@ -16,7 +16,7 @@ interface ChatStore {
 const WELCOME: ChatMessage = {
   id: 'welcome',
   role: 'assistant',
-  content: '안녕하세요! Synaptix AI입니다.\n위젯 제어, 할일 추가, 지출 기록, 날씨 도시 변경 등을 도와드릴게요.\n\n예시: "날씨 위젯 숨겨줘", "내일 회의 할일 추가해줘", "점심 8000원 식비 기록해줘"',
+  content: '안녕하세요! Synaptix AI 비서입니다.\n위젯 제어·할일·가계부 관리는 물론, 내 데이터 분석과 일반적인 질문까지 도와드려요.\n\n예시: "이번 달 지출 분석해줘", "내일 회의 할일 추가해줘", "오늘 점심 메뉴 추천해줘"',
   timestamp: new Date(),
 }
 

@@ -136,18 +136,18 @@ export function StockWidget() {
 
   const detailBtn = (
     <button
-      onClick={() => navigate('/widgets/stocks')}
+      onClick={(e) => { e.stopPropagation(); navigate('/widgets/stocks') }}
       className="flex items-center gap-1 cursor-pointer group p-1 -m-1 rounded"
       style={{ background: 'transparent' }}
       aria-label="시장 상세"
     >
-      <ArrowUpRight size={12} className="text-[#636366] group-hover:text-white transition-colors" />
+      <ArrowUpRight size={12} className="text-[#636366] group-hover:text-white group-hover/card:text-white transition-colors" />
     </button>
   )
 
   const tabBtn = (key: Tab, label: string) => (
     <button
-      onClick={() => { setTab(key); setExpanded(false) }}
+      onClick={(e) => { e.stopPropagation(); setTab(key); setExpanded(false) }}
       style={{
         fontFamily: PIXEL,
         fontSize: '8px',
@@ -168,7 +168,12 @@ export function StockWidget() {
   )
 
   return (
-    <div id="widget-stocks" className="widget-glass h-full rounded-2xl relative overflow-hidden" style={{ background: BG, backdropFilter: 'blur(20px)', WebkitBackdropFilter: 'blur(20px)' }}>
+    <div
+      id="widget-stocks"
+      onClick={() => navigate('/widgets/stocks')}
+      className="group/card widget-glass h-full rounded-2xl relative overflow-hidden cursor-pointer transition-shadow duration-200 hover:ring-1 hover:ring-white/15"
+      style={{ background: BG, backdropFilter: 'blur(20px)', WebkitBackdropFilter: 'blur(20px)' }}
+    >
       <PixelBars style={{ width: 100, height: 45, bottom: 60, right: -8, opacity: 0.07 }} />
       <MarketsEffect trend={trend} />
 
@@ -220,7 +225,7 @@ export function StockWidget() {
           </div>
           <div className="flex items-center gap-2">
             {hasMore && (
-              <button onClick={() => setExpanded((e) => !e)}
+              <button onClick={(ev) => { ev.stopPropagation(); setExpanded((e) => !e) }}
                 style={{ fontFamily: PIXEL, fontSize: '6px', color: '#8E8E93', background: 'rgba(255,255,255,0.05)', border: `1px solid ${BORDER}`, padding: '4px 8px', borderRadius: 4, cursor: 'pointer', letterSpacing: '0.05em' }}
                 onMouseEnter={(e) => (e.currentTarget.style.color = '#AEAEB2')}
                 onMouseLeave={(e) => (e.currentTarget.style.color = '#8E8E93')}
@@ -229,7 +234,7 @@ export function StockWidget() {
               </button>
             )}
             {detailBtn}
-            <button onClick={onRefresh} aria-label="주식 시세 새로고침" style={{ color: '#636366' }}
+            <button onClick={(e) => { e.stopPropagation(); onRefresh() }} aria-label="주식 시세 새로고침" style={{ color: '#636366' }}
               className="hover:text-white transition-colors cursor-pointer p-1.5 rounded hover:bg-white/10">
               <RefreshCw size={10} aria-hidden="true" />
             </button>

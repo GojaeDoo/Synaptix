@@ -52,25 +52,30 @@ export function NewsWidget() {
   const displayed = expanded ? articles : articles?.slice(0, 5)
 
   return (
-    <div id="widget-news" className="widget-glass h-full rounded-2xl relative overflow-hidden flex flex-col" style={{ background: BG, backdropFilter: 'blur(20px)', WebkitBackdropFilter: 'blur(20px)' }}>
+    <div
+      id="widget-news"
+      onClick={() => navigate('/widgets/news')}
+      className="group/card widget-glass h-full rounded-2xl relative overflow-hidden flex flex-col cursor-pointer transition-shadow duration-200 hover:ring-1 hover:ring-white/15"
+      style={{ background: BG, backdropFilter: 'blur(20px)', WebkitBackdropFilter: 'blur(20px)' }}
+    >
       <PixelNewspaper style={{ width: 96, height: 116, top: -8, right: -8, opacity: 0.14, transform: 'rotate(-6deg)' }} />
 
       {/* header */}
       <div className="flex items-center justify-between gap-2 relative z-10 shrink-0" style={{ padding: '14px 18px 10px' }}>
         <button
-          onClick={() => navigate('/widgets/news')}
+          onClick={(e) => { e.stopPropagation(); navigate('/widgets/news') }}
           className="flex items-center gap-1.5 cursor-pointer group min-w-0"
           style={{ background: 'transparent' }}
         >
-          <span className="truncate group-hover:text-white transition-colors" style={{ fontFamily: PIXEL, fontSize: '8px', color: '#8E8E93', letterSpacing: '0.1em' }}>
+          <span className="truncate group-hover:text-white group-hover/card:text-white transition-colors" style={{ fontFamily: PIXEL, fontSize: '8px', color: '#8E8E93', letterSpacing: '0.1em' }}>
             HACKER NEWS
           </span>
-          <ArrowUpRight size={11} className="text-[#636366] group-hover:text-white transition-colors shrink-0" />
+          <ArrowUpRight size={11} className="text-[#636366] group-hover:text-white group-hover/card:text-white transition-colors shrink-0" />
         </button>
         <div className="flex items-center gap-1.5 shrink-0">
           {/* 데스크톱 more 버튼 */}
           {hasMore && (
-            <button onClick={() => setExpanded((e) => !e)}
+            <button onClick={(ev) => { ev.stopPropagation(); setExpanded((e) => !e) }}
               className="hidden sm:block"
               style={{ fontFamily: PIXEL, fontSize: '6px', color: '#8E8E93', background: 'rgba(255,255,255,0.05)', border: `1px solid ${BORDER}`, padding: '4px 8px', borderRadius: 4, cursor: 'pointer', letterSpacing: '0.05em', whiteSpace: 'nowrap' }}
               onMouseEnter={(e) => (e.currentTarget.style.color = '#AEAEB2')}
@@ -79,7 +84,7 @@ export function NewsWidget() {
               {expanded ? 'LESS' : `+${total - 5}`}
             </button>
           )}
-          <button onClick={onRefresh} aria-label="뉴스 새로고침" style={{ color: '#636366' }}
+          <button onClick={(e) => { e.stopPropagation(); onRefresh() }} aria-label="뉴스 새로고침" style={{ color: '#636366' }}
             className="hover:text-white transition-colors cursor-pointer p-1.5 rounded hover:bg-white/10">
             <RefreshCw size={13} className={isLoading ? 'animate-spin' : ''} aria-hidden="true" />
           </button>
@@ -107,6 +112,7 @@ export function NewsWidget() {
               key={i}
               href={article.url !== '#' ? article.url : undefined}
               target="_blank" rel="noopener noreferrer"
+              onClick={(e) => e.stopPropagation()}
               className="flex items-start gap-3 shrink-0 transition-colors"
               style={{ padding: '12px 20px', borderBottom: i < 2 ? `1px solid ${BORDER}` : 'none' }}
               onMouseEnter={(e) => (e.currentTarget.style.background = 'rgba(255,255,255,0.03)')}
@@ -147,6 +153,7 @@ export function NewsWidget() {
               key={i}
               href={article.url !== '#' ? article.url : undefined}
               target="_blank" rel="noopener noreferrer"
+              onClick={(e) => e.stopPropagation()}
               className="flex items-start gap-4 shrink-0 transition-colors cursor-pointer"
               style={{
                 padding: '12px 20px',

@@ -6,6 +6,7 @@ import path from 'path'
 import { VitePWA } from 'vite-plugin-pwa'
 import { Ratelimit } from '@upstash/ratelimit'
 import { Redis } from '@upstash/redis'
+import { validateChatPayload } from './api/_chat-validation'
 
 const GEMINI_URL = 'https://generativelanguage.googleapis.com/v1beta/openai/chat/completions'
 const MODEL = 'gemini-2.5-flash'
@@ -235,7 +236,21 @@ function localChatApi(
             }
           }
           try {
-            const body = JSON.parse(raw)
+            let rawBody: unknown
+            try {
+              rawBody = JSON.parse(raw)
+            } catch {
+              sendJson(res, 400, { error: 'Invalid JSON' })
+              return
+            }
+
+            const valid = validateChatPayload(rawBody)
+            if (!valid.ok) {
+              sendJson(res, valid.status, { error: { message: valid.message } })
+              return
+            }
+            const { messages, tools } = valid.value
+
             const callApi = (withTools: boolean) =>
               fetch(GEMINI_URL, {
                 method: 'POST',
@@ -245,8 +260,8 @@ function localChatApi(
                 },
                 body: JSON.stringify({
                   model: MODEL,
-                  messages: body.messages,
-                  ...(withTools && body.tools ? { tools: body.tools, tool_choice: 'auto' } : {}),
+                  messages,
+                  ...(withTools && tools ? { tools, tool_choice: 'auto' } : {}),
                 }),
               })
 
@@ -264,7 +279,7 @@ function localChatApi(
             }
 
             // tool call 실패 시 tool 없이 한 번 더 호출 (단, 429/503은 별도 처리)
-            if (!r.ok && body.tools && r.status >= 400 && r.status < 500 && r.status !== 429) {
+            if (!r.ok && tools && r.status >= 400 && r.status < 500 && r.status !== 429) {
               const retry = await callApi(false)
               if (retry.ok) {
                 text = await retry.text()

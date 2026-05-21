@@ -4,6 +4,7 @@ import { Dashboard } from './pages/Dashboard'
 import { Login } from './pages/Login'
 import { NotFound } from './pages/NotFound'
 import { ErrorBoundary } from './components/ErrorBoundary'
+import { ChatPanel } from './components/widgets/ChatPanel'
 import { useAuth } from './hooks/useAuth'
 
 // Detail 페이지는 초기 진입에 필요 없으므로 라우트 단위 lazy로 분리.
@@ -53,6 +54,8 @@ export default function App() {
           <Route path="*" element={<NotFound />} />
         </Routes>
       </Suspense>
+      {/* 전역 AI 채팅 오버레이 — 모든 페이지에서 chatStore.isOpen 으로 열린다. */}
+      <ChatPanel />
     </ErrorBoundary>
   )
 }

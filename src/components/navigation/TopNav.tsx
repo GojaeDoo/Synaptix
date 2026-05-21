@@ -1,10 +1,12 @@
 import { useState, useEffect, useRef } from 'react'
-import { RefreshCw, LogOut, LayoutGrid, Check, LogIn } from 'lucide-react'
+import { RefreshCw, LogOut, LayoutGrid, Check, LogIn, Sparkles } from 'lucide-react'
 import { useQueryClient } from '@tanstack/react-query'
 import { useLocation, useNavigate } from 'react-router-dom'
 import { cn } from '@/lib/utils'
 import { useAuth, signOut } from '@/hooks/useAuth'
 import { useWidgetStore } from '@/store/widgetStore'
+import { useChatStore } from '@/store/chatStore'
+import { DemoModeChip } from '@/components/DemoModeChip'
 
 const PAGE_TITLES: Record<string, string> = {
   '/widgets/weather':  '날씨',
@@ -25,6 +27,8 @@ export function TopNav() {
   const editMode = useWidgetStore((s) => s.editMode)
   const toggleEditMode = useWidgetStore((s) => s.toggleEditMode)
   const resetLayouts = useWidgetStore((s) => s.resetLayouts)
+  const chatOpen = useChatStore((s) => s.isOpen)
+  const toggleChat = useChatStore((s) => s.toggleChat)
 
   const isDashboard = pathname === '/'
   const pageTitle = PAGE_TITLES[pathname] ?? null
@@ -67,10 +71,30 @@ export function TopNav() {
               <span className="text-[#8E8E93] font-normal truncate">{pageTitle}</span>
             </>
           )}
+          <DemoModeChip />
         </nav>
 
         {/* Actions */}
         <div className="flex items-center gap-0.5 shrink-0">
+
+          {/* AI 채팅 토글 — 데스크톱 전용. 대시보드엔 챗봇 위젯 타일이 따로 있어 제외.
+              (모바일은 하단 네비의 AI 탭이 담당) */}
+          {!isDashboard && (
+            <button
+              onClick={toggleChat}
+              className={cn(
+                'hidden lg:flex items-center gap-1.5 h-7 px-2.5 mr-1 rounded-md text-[12px] transition-colors cursor-pointer',
+                chatOpen
+                  ? 'bg-[rgba(49,130,246,0.15)] text-[#3182F6]'
+                  : 'text-[#8E8E93] hover:text-[#F2F2F7] hover:bg-white/[0.04]'
+              )}
+              aria-pressed={chatOpen}
+              title="AI 어시스턴트"
+            >
+              <Sparkles size={13} />
+              <span>AI</span>
+            </button>
+          )}
 
           {isDashboard && (
             <>

@@ -13,7 +13,7 @@ concurrency:
 
 jobs:
   check:
-    name: Lint · Typecheck · Build
+    name: Lint · Typecheck · Test · Build
     runs-on: ubuntu-latest
     timeout-minutes: 8
 
@@ -32,6 +32,13 @@ jobs:
 
       - name: Lint
         run: npm run lint
+
+      # api/ 는 별도 tsconfig라 `tsc -b`(아래 Build) 가 건드리지 않는다 — 따로 타입체크.
+      - name: Typecheck (api)
+        run: npx tsc -p api/tsconfig.json --noEmit
+
+      - name: Test
+        run: npm test
 
       # `npm run build`가 `tsc -b && vite build`라서 타입체크와 빌드가 같이 돈다.
       # Supabase/OpenWeather 등 외부 키 없이도 빌드 자체는 성공해야 정상.
