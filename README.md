@@ -35,7 +35,7 @@
 ## 배포
 
 - **Platform**: Vercel
-- **URL**: (배포 후 추가 예정)
+- **URL**: https://synaptix-ten.vercel.app
 
 ---
 
