@@ -54,7 +54,11 @@
   }
 }
 
-html { height: 100%; }
+html {
+  height: 100%;
+  overflow: hidden;
+  overscroll-behavior: none;
+}
 
 body {
   background: #0F0F0F;
@@ -64,6 +68,8 @@ body {
   -moz-osx-font-smoothing: grayscale;
   font-variant-numeric: tabular-nums;
   height: 100%;
+  overflow: hidden;
+  overscroll-behavior: none;
 }
 
 #root { height: 100%; }

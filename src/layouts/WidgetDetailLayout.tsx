@@ -27,7 +27,7 @@ export function WidgetDetailLayout({ title, kicker, subtitle, accent = '#3182F6'
 
       <main
         id="main-scroll"
-        className="flex-1 overflow-y-auto overflow-x-hidden px-4 sm:px-6 lg:px-8 xl:px-10 pb-[calc(110px_+_env(safe-area-inset-bottom,0px))] lg:pb-8"
+        className="flex-1 overflow-y-auto overflow-x-hidden overscroll-contain px-4 sm:px-6 lg:px-8 xl:px-10 pb-[calc(72px_+_env(safe-area-inset-bottom,0px))] lg:pb-8"
       >
         <div className="max-w-6xl mx-auto py-6 sm:py-8">
           {/* page header */}
