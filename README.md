@@ -28,7 +28,8 @@
 | **Serverless** | Vercel Edge Functions (Gemini · 외부 API 프록시) |
 | **Rate Limit** | Upstash Redis (sliding window) |
 | **외부 API** | OpenWeatherMap, Finnhub, CoinGecko, Hacker News |
-| **PWA** | vite-plugin-pwa (오프라인 캐시, 홈 추가) |
+| **PWA** | vite-plugin-pwa (오프라인 캐시, 홈 추가, **Web Push 알림**) |
+| **푸시 알림** | Web Push (VAPID) + `web-push` + Vercel Cron (일정 하루 전 발송) |
 | **검증** | Zod (LLM tool args 런타임 검증) |
 | **테스트 · CI** | Vitest 79개 (위젯 순수 로직 · 검증기 · API 매퍼 · 예보 집계) + GitHub Actions (lint · typecheck · test · build) |
 
@@ -88,8 +89,26 @@ useTodos()
 | **날씨** | OpenWeatherMap (현재 + 5일 예보, 위치 기반) | 시간별 예보, 일출/일몰, 체감온도 |
 | **주식 / 코인** | Finnhub + CoinGecko | 종목별 변동률, 고저가, 거래 차트 |
 | **뉴스** | Hacker News | 상위 스토리 + 외부 링크 |
-| **캘린더 / 할 일** | Supabase | 월별 뷰, 우선순위, 마감일 |
+| **캘린더 / 할 일** | Supabase | 월별 뷰, 우선순위, 마감일, **하루 전 푸시 알림** |
 | **가계부** | Supabase | 카테고리별 파이 차트, 월별 통계 |
+
+### 푸시 리마인더 (Web Push)
+홈 화면에 추가한 PWA에 **카톡처럼 백그라운드 알림**을 보냅니다. 앱을 켜두지 않아도, 화면이 꺼져 있어도 일정 하루 전 아침에 푸시가 도착합니다.
+
+```
+[클라이언트] 캘린더 페이지 → "알림 받기" 토글 → 권한 허용
+        ↓ PushManager.subscribe (VAPID 공개키)
+[Supabase] push_subscriptions 테이블 (RLS: 본인 구독만)
+        ↓ 매일 23:00 UTC (= 08:00 KST)
+[Vercel Cron] /api/send-reminders → 내일 일정 있는 사용자 조회 → web-push 발송
+        ↓ Apple/Google/Mozilla 푸시 서비스
+[폰] 서비스워커 push 이벤트 → 알림 표시 → 클릭 시 캘린더 열기
+```
+
+- **iOS 제약**: Safari 일반 탭은 푸시 미지원. iOS 16.4+ 이며 **홈 화면 PWA에서만** 동작 — 토글 버튼이 미지원 환경에서는 자동으로 안내 문구로 바뀝니다.
+- **만료 구독 자동 정리**: 발송 시 410 Gone 응답이 오면 (예: 사용자가 홈 아이콘 삭제) 해당 구독을 DB에서 즉시 삭제해 다음 cron에서 무효 발송이 누적되지 않게 했습니다.
+- **VAPID 비밀키 격리**: `VAPID_PRIVATE_KEY` · `SUPABASE_SERVICE_ROLE_KEY` 는 서버 환경변수에만 두고 `VITE_` 접두사를 붙이지 않아 클라이언트 번들에 절대 포함되지 않습니다.
+- **Cron 엔드포인트 인증**: `/api/send-reminders`는 공개 URL이므로 `Authorization: Bearer <CRON_SECRET>` 헤더 검증 — 외부 호출자가 발송을 트리거할 수 없습니다.
 
 ### 보안
 - **API 키 격리**: 모든 외부 API 키(Gemini, OpenWeather, Finnhub)는 Vercel Edge Function 환경변수에만 존재. 클라이언트 번들에 노출되지 않습니다.
@@ -154,15 +173,19 @@ src/
 │   │                   # 위젯별 순수 로직 — UI/상태와 분리해 단위 테스트(*.test.ts)
 │   ├── openai.ts       # 채팅 시스템 프롬프트 + Tool 정의
 │   ├── supabase.ts     # Supabase 클라이언트
+│   ├── push.ts         # 웹 푸시 구독/해제 + Supabase 저장
 │   ├── queryFallback.ts# mock 폴백 정책
 │   └── queryClient.ts  # React Query 설정
 └── types/              # 도메인 타입
+public/
+└── sw-push.js          # 서비스워커 push/notificationclick 핸들러 (workbox importScripts)
 api/
 ├── chat.ts             # Gemini 프록시 + Upstash rate limit
 ├── weather.ts          # OpenWeatherMap 프록시
 ├── stock.ts            # Finnhub 프록시
 ├── crypto.ts           # CoinGecko 프록시 (Cache-Control)
-└── news.ts             # HackerNews fan-out 프록시 (Cache-Control)
+├── news.ts             # HackerNews fan-out 프록시 (Cache-Control)
+└── send-reminders.ts   # 일정 하루 전 푸시 발송 (Vercel Cron, Node 런타임)
 ```
 
 ---
@@ -191,6 +214,10 @@ npm run dev
 | `UPSTASH_REDIS_REST_URL` / `_TOKEN` | `/api/chat` rate limit | rate limit 미적용 (dev OK, prod 권장) |
 | `VITE_SUPABASE_URL` / `_ANON_KEY` | 인증·DB | dev placeholder, prod throw |
 | `VITE_SITE_URL` *(선택)* | OAuth redirect 고정 | 현재 origin 사용 |
+| `VITE_VAPID_PUBLIC_KEY` | 클라이언트 푸시 구독 | 알림 기능 비활성 |
+| `VAPID_PUBLIC_KEY` / `_PRIVATE_KEY` / `_SUBJECT` | 서버 푸시 발송 (web-push) | 알림 기능 비활성 |
+| `SUPABASE_SERVICE_ROLE_KEY` | Cron이 전체 사용자 일정 조회 (RLS 우회) | Cron 발송 503 |
+| `CRON_SECRET` | `/api/send-reminders` 호출자 인증 | 검증 미적용 (prod 권장) |
 
 ---
 

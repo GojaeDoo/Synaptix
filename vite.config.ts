@@ -330,6 +330,11 @@ export default defineConfig(({ mode }) => {
     VitePWA({
       registerType: 'autoUpdate',
       includeAssets: ['icon.svg', 'apple-touch-icon.png', 'icon-192.png', 'icon-512.png'],
+      workbox: {
+        // 생성된 서비스워커가 push/notificationclick 핸들러를 불러오도록 주입.
+        // public/sw-push.js → 빌드 시 dist 루트로 복사됨.
+        importScripts: ['/sw-push.js'],
+      },
       manifest: {
         name: 'Synaptix',
         short_name: 'Synaptix',

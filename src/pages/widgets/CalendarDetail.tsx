@@ -8,6 +8,7 @@ import { CalendarGrid } from './calendar/CalendarGrid'
 import { TodoPanel } from './calendar/TodoPanel'
 import { EditTodoModal } from './calendar/EditTodoModal'
 import { DeleteTodoModal } from './calendar/DeleteTodoModal'
+import { NotificationToggle } from './calendar/NotificationToggle'
 import { ACCENT } from './calendar/constants'
 
 export function CalendarDetail() {
@@ -33,6 +34,7 @@ export function CalendarDetail() {
       kicker="TODO"
       subtitle={`총 ${todoCounts.total}개 · 진행 중 ${todoCounts.pending}개 · 완료 ${todoCounts.done}개`}
       accent={ACCENT}
+      actions={<NotificationToggle />}
     >
       <StatCards counts={todoCounts} overdue={overdue} />
 
