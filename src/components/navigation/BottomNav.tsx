@@ -38,7 +38,7 @@ export function BottomNav() {
           backdropFilter: 'blur(20px)',
           WebkitBackdropFilter: 'blur(20px)',
           borderTop: '1px solid #2A2A2A',
-          paddingBottom: 'env(safe-area-inset-bottom, 0px)',
+          paddingBottom: 'min(env(safe-area-inset-bottom, 0px), 12px)',
         }}
       >
         {/* 탭 행 — 하단 여백은 safe-area-inset이 처리하므로 최소화 */}
