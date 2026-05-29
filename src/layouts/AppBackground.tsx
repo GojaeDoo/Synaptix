@@ -1,16 +1,15 @@
 import { useEffect, useRef } from 'react'
 
-/**
- * 뉴럴 네트워크 스타일 배경 — 떠다니는 노드들이 가까워지면
- * 부드러운 라인으로 연결되며 데이터 흐름을 시각화. AI 대시보드 컨셉.
- */
+// A: 작은 픽셀 사각형들이 천천히 떠다님
+// D: CRT 스캔라인이 위→아래로 흘러감
 
-interface Node {
+interface Particle {
   x: number
   y: number
   vx: number
   vy: number
-  r: number
+  size: number
+  opacity: number
   pulse: number
   pulseSpeed: number
 }
@@ -28,8 +27,8 @@ export function AppBackground() {
 
     let width = 0
     let height = 0
-    let dpr = Math.min(window.devicePixelRatio || 1, 2)
-    let nodes: Node[] = []
+    let dpr = 1
+    let particles: Particle[] = []
     let rafId = 0
 
     const resize = () => {
@@ -42,109 +41,47 @@ export function AppBackground() {
       canvas.style.height = `${height}px`
       ctx.setTransform(dpr, 0, 0, dpr, 0, 0)
 
-      // 화면 크기에 비례한 노드 개수 (모바일은 더 적게)
-      const area = width * height
-      const density = width < 640 ? 22000 : 16000
-      const count = Math.min(70, Math.max(24, Math.floor(area / density)))
-
-      nodes = Array.from({ length: count }, () => ({
+      const count = width < 640 ? 28 : 52
+      particles = Array.from({ length: count }, () => ({
         x: Math.random() * width,
         y: Math.random() * height,
-        vx: (Math.random() - 0.5) * 0.18,
-        vy: (Math.random() - 0.5) * 0.18,
-        r: 1.1 + Math.random() * 1.4,
+        vx: (Math.random() - 0.5) * 0.28,
+        vy: (Math.random() - 0.5) * 0.28,
+        size: [2, 2, 2, 3, 3, 4, 4, 6, 6, 8][Math.floor(Math.random() * 10)],
+        opacity: 0.12 + Math.random() * 0.22,
         pulse: Math.random() * Math.PI * 2,
-        pulseSpeed: 0.008 + Math.random() * 0.014,
+        pulseSpeed: 0.005 + Math.random() * 0.009,
       }))
     }
-
-    const maxDist = 140
-    const maxDistSq = maxDist * maxDist
 
     const draw = () => {
       ctx.clearRect(0, 0, width, height)
 
-      // 노드 이동 & 갱신
-      for (const n of nodes) {
-        n.x += n.vx
-        n.y += n.vy
-        n.pulse += n.pulseSpeed
+      for (const p of particles) {
+        p.x += p.vx
+        p.y += p.vy
+        p.pulse += p.pulseSpeed
 
-        if (n.x < -20) n.x = width + 20
-        else if (n.x > width + 20) n.x = -20
-        if (n.y < -20) n.y = height + 20
-        else if (n.y > height + 20) n.y = -20
-      }
+        if (p.x < -8) p.x = width + 8
+        else if (p.x > width + 8) p.x = -8
+        if (p.y < -8) p.y = height + 8
+        else if (p.y > height + 8) p.y = -8
 
-      // 라인 (가까운 노드들 연결)
-      ctx.lineWidth = 0.8
-      for (let i = 0; i < nodes.length; i++) {
-        const a = nodes[i]
-        for (let j = i + 1; j < nodes.length; j++) {
-          const b = nodes[j]
-          const dx = a.x - b.x
-          const dy = a.y - b.y
-          const distSq = dx * dx + dy * dy
-          if (distSq < maxDistSq) {
-            const alpha = (1 - distSq / maxDistSq) * 0.18
-            ctx.strokeStyle = `rgba(49, 130, 246, ${alpha})`
-            ctx.beginPath()
-            ctx.moveTo(a.x, a.y)
-            ctx.lineTo(b.x, b.y)
-            ctx.stroke()
-          }
-        }
-      }
+        const pulseAmt = (Math.sin(p.pulse) + 1) * 0.5
+        const alpha = p.opacity * (0.55 + pulseAmt * 0.45)
 
-      // 노드 (펄스 효과)
-      for (const n of nodes) {
-        const pulseAmt = (Math.sin(n.pulse) + 1) * 0.5 // 0~1
-        const glowR = n.r + 2.4 + pulseAmt * 2.2
-
-        const grad = ctx.createRadialGradient(n.x, n.y, 0, n.x, n.y, glowR)
-        grad.addColorStop(0, `rgba(120, 170, 255, ${0.45 + pulseAmt * 0.25})`)
-        grad.addColorStop(0.5, 'rgba(49, 130, 246, 0.18)')
-        grad.addColorStop(1, 'rgba(49, 130, 246, 0)')
-        ctx.fillStyle = grad
-        ctx.beginPath()
-        ctx.arc(n.x, n.y, glowR, 0, Math.PI * 2)
-        ctx.fill()
-
-        ctx.fillStyle = `rgba(190, 215, 255, ${0.55 + pulseAmt * 0.3})`
-        ctx.beginPath()
-        ctx.arc(n.x, n.y, n.r, 0, Math.PI * 2)
-        ctx.fill()
+        ctx.fillStyle = `rgba(210, 220, 255, ${alpha})`
+        ctx.fillRect(Math.round(p.x), Math.round(p.y), p.size, p.size)
       }
 
       rafId = requestAnimationFrame(draw)
     }
 
     const drawStatic = () => {
-      // 모션을 줄이는 환경: 정적인 한 프레임만
       ctx.clearRect(0, 0, width, height)
-      ctx.lineWidth = 0.8
-      for (let i = 0; i < nodes.length; i++) {
-        const a = nodes[i]
-        for (let j = i + 1; j < nodes.length; j++) {
-          const b = nodes[j]
-          const dx = a.x - b.x
-          const dy = a.y - b.y
-          const distSq = dx * dx + dy * dy
-          if (distSq < maxDistSq) {
-            const alpha = (1 - distSq / maxDistSq) * 0.14
-            ctx.strokeStyle = `rgba(49, 130, 246, ${alpha})`
-            ctx.beginPath()
-            ctx.moveTo(a.x, a.y)
-            ctx.lineTo(b.x, b.y)
-            ctx.stroke()
-          }
-        }
-      }
-      for (const n of nodes) {
-        ctx.fillStyle = 'rgba(190, 215, 255, 0.55)'
-        ctx.beginPath()
-        ctx.arc(n.x, n.y, n.r, 0, Math.PI * 2)
-        ctx.fill()
+      for (const p of particles) {
+        ctx.fillStyle = `rgba(210, 220, 255, ${p.opacity})`
+        ctx.fillRect(Math.round(p.x), Math.round(p.y), p.size, p.size)
       }
     }
 
@@ -160,7 +97,6 @@ export function AppBackground() {
       if (prefersReducedMotion) drawStatic()
     }
     window.addEventListener('resize', onResize)
-
     return () => {
       window.removeEventListener('resize', onResize)
       if (rafId) cancelAnimationFrame(rafId)
@@ -169,44 +105,46 @@ export function AppBackground() {
 
   return (
     <>
-      {/* base color */}
+      {/* 베이스 배경 */}
       <div aria-hidden className="fixed inset-0 -z-30 pointer-events-none bg-[#0B0B10]" />
 
-      {/* faint blue glow top-left for depth */}
+      {/* 블루 글로우 좌상단 */}
       <div
         aria-hidden
         className="fixed -z-20 pointer-events-none"
         style={{
-          top: '-200px',
-          left: '-180px',
-          width: '700px',
-          height: '700px',
-          background:
-            'radial-gradient(circle, rgba(49,130,246,0.10), transparent 65%)',
+          top: '-180px', left: '-160px',
+          width: '580px', height: '580px',
+          background: 'radial-gradient(circle, rgba(49,130,246,0.07), transparent 65%)',
           filter: 'blur(60px)',
         }}
       />
 
-      {/* soft violet glow bottom-right for AI vibe */}
+      {/* 바이올렛 글로우 우하단 */}
       <div
         aria-hidden
         className="fixed -z-20 pointer-events-none"
         style={{
-          bottom: '-240px',
-          right: '-200px',
-          width: '720px',
-          height: '720px',
-          background:
-            'radial-gradient(circle, rgba(139,92,246,0.10), transparent 65%)',
+          bottom: '-220px', right: '-180px',
+          width: '580px', height: '580px',
+          background: 'radial-gradient(circle, rgba(139,92,246,0.07), transparent 65%)',
           filter: 'blur(70px)',
         }}
       />
 
-      {/* neural network canvas */}
-      <canvas
-        ref={canvasRef}
+      {/* 픽셀 파티클 캔버스 */}
+      <canvas ref={canvasRef} aria-hidden className="fixed inset-0 -z-10 pointer-events-none" />
+
+      {/* CRT 스캔라인 */}
+      <div
         aria-hidden
-        className="fixed inset-0 -z-10 pointer-events-none"
+        className="fixed inset-x-0 -z-10 pointer-events-none"
+        style={{
+          height: 140,
+          top: 0,
+          background: 'linear-gradient(to bottom, transparent 0%, rgba(180,200,255,0.028) 50%, transparent 100%)',
+          animation: 'crt-scanline 11s linear infinite',
+        }}
       />
     </>
   )

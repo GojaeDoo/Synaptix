@@ -55,7 +55,7 @@ export function NewsWidget() {
     <div
       id="widget-news"
       onClick={() => navigate('/widgets/news')}
-      className="group/card widget-glass h-full rounded-2xl relative overflow-hidden flex flex-col cursor-pointer transition-shadow duration-200 hover:ring-1 hover:ring-white/15"
+      className="group/card widget-glass h-full rounded-[8px] relative overflow-hidden flex flex-col cursor-pointer"
       style={{ background: BG, backdropFilter: 'blur(20px)', WebkitBackdropFilter: 'blur(20px)' }}
     >
       <PixelNewspaper style={{ width: 96, height: 116, top: -8, right: -8, opacity: 0.14, transform: 'rotate(-6deg)' }} />

@@ -31,7 +31,7 @@ export function WidgetDetailLayout({ title, kicker, subtitle, accent = '#3182F6'
       >
         <div className="max-w-6xl mx-auto py-6 sm:py-8">
           {/* page header */}
-          <div className="flex items-start justify-between gap-4 mb-6 sm:mb-8">
+          <div className="flex items-start justify-between gap-4 mb-6 sm:mb-8 px-4 py-5 -mx-4" style={{ background: 'rgba(28,28,32,0.8)', border: '2px solid rgba(180,200,255,0.10)', boxShadow: '4px 4px 0 rgba(0,0,0,0.5)', borderRadius: 8 }}>
             <div className="flex items-start gap-3">
               <button
                 onClick={() => navigate('/')}

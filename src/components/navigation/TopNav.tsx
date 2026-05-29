@@ -55,14 +55,14 @@ export function TopNav() {
   }
 
   return (
-    <header className="sticky top-0 z-30 bg-[#0F0F0F] border-b border-[#1F1F1F] safe-top">
+    <header className="sticky top-0 z-30 bg-[#0F0F0F] safe-top" style={{ borderBottom: '2px solid rgba(180,200,255,0.08)' }}>
       <div className="flex items-center justify-between h-12 px-4 sm:px-6 lg:px-8">
 
         {/* Brand + breadcrumb */}
         <nav className="flex items-center gap-2 text-[14px] leading-none min-w-0" aria-label="현재 위치">
           <button
             onClick={() => navigate('/')}
-            className="-ml-1.5 px-1.5 py-1 rounded-md font-bold tracking-tight text-[#F2F2F7] hover:bg-white/[0.04] transition-colors cursor-pointer shrink-0"
+            className="-ml-1.5 px-1.5 py-1 font-pixel text-[10px] tracking-widest text-[#F2F2F7] hover:bg-white/[0.04] transition-colors cursor-pointer shrink-0"
             aria-label="대시보드로 이동"
           >
             Synaptix

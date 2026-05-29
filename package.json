@@ -32,6 +32,7 @@
     "react-grid-layout": "^1.5.3",
     "react-router-dom": "^7.15.0",
     "recharts": "^3.8.1",
+    "sonner": "^2.0.7",
     "tailwind-merge": "^3.6.0",
     "web-push": "^3.6.7",
     "zod": "^4.4.3",

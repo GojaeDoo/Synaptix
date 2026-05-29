@@ -59,7 +59,7 @@ export function CalendarWidget() {
   const done = todos.filter((t) => t.completed)
 
   return (
-    <div id="widget-calendar" className="group/card widget-glass h-full rounded-2xl relative overflow-hidden flex flex-col" style={{ background: BG, backdropFilter: 'blur(20px)', WebkitBackdropFilter: 'blur(20px)' }}>
+    <div id="widget-calendar" className="group/card widget-glass h-full rounded-[8px] relative overflow-hidden flex flex-col" style={{ background: BG, backdropFilter: 'blur(20px)', WebkitBackdropFilter: 'blur(20px)' }}>
       <PixelGrid style={{ width: 72, height: 60, top: -6, right: 14, opacity: 0.06 }} />
 
       {/* mobile */}

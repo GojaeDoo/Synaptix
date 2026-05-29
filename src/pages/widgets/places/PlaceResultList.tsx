@@ -1,7 +1,43 @@
-import { MapPin, Phone, ExternalLink, CalendarPlus, Check, Route } from 'lucide-react'
+import {
+  MapPin, Phone, ExternalLink, CalendarPlus, Check, Route,
+  Utensils, Coffee, TreePine, Landmark, ShoppingBag, Heart,
+  Dumbbell, Hotel, Building2, Film, Car, Pill,
+} from 'lucide-react'
+import { toast } from 'sonner'
 import type { Place } from '@/types'
 import { formatDistance } from '@/lib/places'
 import { CARD_BG, BORDER, ACCENT } from './constants'
+
+interface ThumbStyle { icon: React.ElementType; bg: string; color: string }
+
+function getCategoryThumb(category: string): ThumbStyle {
+  const c = category.toLowerCase()
+  if (c.includes('카페') || c.includes('커피') || c.includes('디저트') || c.includes('베이커리'))
+    return { icon: Coffee, bg: '#3D2B1F', color: '#C8956C' }
+  if (c.includes('음식') || c.includes('한식') || c.includes('일식') || c.includes('중식') ||
+      c.includes('양식') || c.includes('분식') || c.includes('치킨') || c.includes('피자') ||
+      c.includes('술집') || c.includes('고기') || c.includes('해산물'))
+    return { icon: Utensils, bg: '#2D1F1F', color: '#E07070' }
+  if (c.includes('공원') || c.includes('숲') || c.includes('산') || c.includes('자연'))
+    return { icon: TreePine, bg: '#1A2D1A', color: '#5CB85C' }
+  if (c.includes('관광') || c.includes('명소') || c.includes('문화') || c.includes('박물관') || c.includes('미술관'))
+    return { icon: Landmark, bg: '#1F1F2D', color: '#7B7BE8' }
+  if (c.includes('쇼핑') || c.includes('마트') || c.includes('편의점') || c.includes('백화점') || c.includes('시장'))
+    return { icon: ShoppingBag, bg: '#2D1F2D', color: '#C86CC8' }
+  if (c.includes('병원') || c.includes('의원') || c.includes('클리닉'))
+    return { icon: Heart, bg: '#2D1A1A', color: '#E05C5C' }
+  if (c.includes('약국'))
+    return { icon: Pill, bg: '#1A2A2D', color: '#5BC8C8' }
+  if (c.includes('스포츠') || c.includes('헬스') || c.includes('피트니스') || c.includes('여가'))
+    return { icon: Dumbbell, bg: '#1F2A1F', color: '#7EC87E' }
+  if (c.includes('숙박') || c.includes('호텔') || c.includes('모텔') || c.includes('펜션'))
+    return { icon: Hotel, bg: '#1F2020', color: '#A0A0B0' }
+  if (c.includes('영화') || c.includes('공연') || c.includes('오락'))
+    return { icon: Film, bg: '#1F1A2D', color: '#9B7BE8' }
+  if (c.includes('주차'))
+    return { icon: Car, bg: '#232323', color: '#888888' }
+  return { icon: Building2, bg: '#1E2025', color: '#6E8FAD' }
+}
 
 interface Props {
   places: Place[]
@@ -56,6 +92,19 @@ export function PlaceResultList({ places, isLoading, query, addedIds, onFocus, o
             className="flex items-start gap-3 p-4 transition-colors"
             style={{ borderBottom: i < places.length - 1 ? `1px solid ${BORDER}` : 'none' }}
           >
+            {/* 카테고리 썸네일 */}
+            {(() => {
+              const { icon: Icon, bg, color } = getCategoryThumb(p.category)
+              return (
+                <div
+                  className="shrink-0 w-11 h-11 rounded-xl flex items-center justify-center"
+                  style={{ background: bg }}
+                  aria-hidden
+                >
+                  <Icon size={20} style={{ color }} strokeWidth={1.8} />
+                </div>
+              )
+            })()}
             <button
               onClick={() => onFocus(p)}
               className="flex-1 min-w-0 text-left cursor-pointer group"
@@ -96,7 +145,10 @@ export function PlaceResultList({ places, isLoading, query, addedIds, onFocus, o
                 </a>
               )}
               <button
-                onClick={() => onAddToCourse(p)}
+                onClick={() => {
+                  onAddToCourse(p)
+                  toast.success(`${p.name} 코스에 추가됨`, { duration: 2000 })
+                }}
                 className="flex items-center gap-1.5 h-8 px-2.5 rounded-lg text-[12px] font-medium transition-colors cursor-pointer text-[#AEAEB2] hover:text-white bg-white/[0.05] hover:bg-white/[0.1]"
                 title="이 장소를 코스(동선)에 추가"
               >

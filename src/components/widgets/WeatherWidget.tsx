@@ -91,7 +91,7 @@ export function WeatherWidget() {
     <div
       id="widget-weather"
       onClick={() => navigate('/widgets/weather')}
-      className={`group/card h-full rounded-2xl relative overflow-hidden font-pixel cursor-pointer transition-shadow duration-200 hover:ring-1 hover:ring-white/15 ${bgClass}`}
+      className={`group/card h-full rounded-[8px] relative overflow-hidden font-pixel cursor-pointer transition-shadow duration-200 widget-glass ${bgClass}`}
     >
       <PixelCloud
         className="w-[130px] h-[65px] -top-2 -left-5"

@@ -44,7 +44,7 @@ export function ChatbotWidget() {
   return (
     <div
       id="widget-chat"
-      className="widget-glass h-full rounded-2xl relative overflow-hidden flex flex-col bg-[rgba(38,38,38,0.72)] backdrop-blur-xl"
+      className="widget-glass h-full rounded-[8px] relative overflow-hidden flex flex-col bg-[rgba(38,38,38,0.72)] backdrop-blur-xl"
     >
       <PixelBot className="w-11 h-[55px] bottom-20 right-4 opacity-[0.06]" />
 

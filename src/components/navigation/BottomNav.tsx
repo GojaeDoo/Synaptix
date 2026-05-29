@@ -22,7 +22,7 @@ export function BottomNav() {
     alignItems: 'center',
     gap: 4,
     padding: '6px 10px',
-    borderRadius: 14,
+    borderRadius: 2,
     border: 'none',
     background: 'none',
     cursor: 'pointer',
@@ -38,7 +38,7 @@ export function BottomNav() {
           background: 'rgba(15,15,15,0.95)',
           backdropFilter: 'blur(20px)',
           WebkitBackdropFilter: 'blur(20px)',
-          borderTop: '1px solid #2A2A2A',
+          borderTop: '2px solid rgba(180,200,255,0.08)',
           paddingBottom: 0,
         }}
       >

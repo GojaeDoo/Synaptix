@@ -1,5 +1,6 @@
 import { lazy, Suspense } from 'react'
 import { Routes, Route, Navigate } from 'react-router-dom'
+import { Toaster } from 'sonner'
 import { Dashboard } from './pages/Dashboard'
 import { Login } from './pages/Login'
 import { NotFound } from './pages/NotFound'
@@ -64,6 +65,22 @@ export default function App() {
       </Suspense>
       {/* 전역 AI 채팅 오버레이 — 모든 페이지에서 chatStore.isOpen 으로 열린다. */}
       <ChatPanel />
+      <Toaster
+        position="bottom-center"
+        toastOptions={{
+          style: {
+            fontFamily: "'Press Start 2P', monospace",
+            fontSize: '9px',
+            letterSpacing: '0.06em',
+            background: '#1A1A1A',
+            border: '2px solid rgba(180,200,255,0.15)',
+            borderRadius: '6px',
+            color: '#F2F2F7',
+            boxShadow: '4px 4px 0 rgba(0,0,0,0.6)',
+            padding: '12px 16px',
+          },
+        }}
+      />
     </ErrorBoundary>
   )
 }

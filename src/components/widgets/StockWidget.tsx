@@ -171,7 +171,7 @@ export function StockWidget() {
     <div
       id="widget-stocks"
       onClick={() => navigate('/widgets/stocks')}
-      className="group/card widget-glass h-full rounded-2xl relative overflow-hidden cursor-pointer transition-shadow duration-200 hover:ring-1 hover:ring-white/15"
+      className="group/card widget-glass h-full rounded-[8px] relative overflow-hidden cursor-pointer"
       style={{ background: BG, backdropFilter: 'blur(20px)', WebkitBackdropFilter: 'blur(20px)' }}
     >
       <PixelBars style={{ width: 100, height: 45, bottom: 60, right: -8, opacity: 0.07 }} />

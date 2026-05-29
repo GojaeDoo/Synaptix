@@ -95,7 +95,7 @@ export function BudgetWidget() {
   const dayLabel = format(parseISO(selectedDate), 'M월 d일 (E)', { locale: ko })
 
   return (
-    <div id="widget-budget" className="group/card widget-glass h-full rounded-2xl relative overflow-hidden flex flex-col" style={{ background: BG, backdropFilter: 'blur(20px)', WebkitBackdropFilter: 'blur(20px)' }}>
+    <div id="widget-budget" className="group/card widget-glass h-full rounded-[8px] relative overflow-hidden flex flex-col" style={{ background: BG, backdropFilter: 'blur(20px)', WebkitBackdropFilter: 'blur(20px)' }}>
       <PixelCoin style={{ width: 56, height: 56, top: 14, right: 18, opacity: 0.07 }} />
 
       {/* mobile */}
