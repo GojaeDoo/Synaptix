@@ -1,4 +1,4 @@
-import { Cloud, TrendingUp, Newspaper, CalendarDays, Wallet, Sparkles } from 'lucide-react'
+import { Cloud, TrendingUp, Newspaper, CalendarDays, Wallet, MapPin, Sparkles } from 'lucide-react'
 import { useNavigate, useLocation } from 'react-router-dom'
 import { useChatStore } from '@/store/chatStore'
 
@@ -8,6 +8,7 @@ const NAV_TABS = [
   { path: '/widgets/news',     label: '뉴스',   icon: Newspaper },
   { path: '/widgets/calendar', label: '캘린더', icon: CalendarDays },
   { path: '/widgets/budget',   label: '가계부', icon: Wallet },
+  { path: '/widgets/places',   label: '장소',   icon: MapPin },
 ] as const
 
 export function BottomNav() {

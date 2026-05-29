@@ -15,6 +15,7 @@ const WEATHER_BASE = 'https://api.openweathermap.org/data/2.5'
 const GEO_BASE = 'https://api.openweathermap.org/geo/1.0'
 const FINNHUB_BASE = 'https://finnhub.io/api/v1'
 const HN_BASE = 'https://hacker-news.firebaseio.com/v0'
+const KAKAO_KEYWORD_URL = 'https://dapi.kakao.com/v2/local/search/keyword.json'
 const COINGECKO_URL =
   'https://api.coingecko.com/api/v3/coins/markets' +
   '?vs_currency=usd' +
@@ -194,6 +195,42 @@ function localStockApi(key: string | undefined): PluginOption {
   }
 }
 
+function localPlacesApi(key: string | undefined): PluginOption {
+  return {
+    name: 'local-places-api',
+    configureServer(server) {
+      server.middlewares.use('/api/places', async (req, res, next) => {
+        if (req.method !== 'GET') return next()
+        if (!key) return sendJson(res, 503, { error: 'not-configured' })
+        try {
+          const url = new URL(req.url ?? '', 'http://localhost')
+          const query = url.searchParams.get('query')?.trim()
+          if (!query) return sendJson(res, 400, { error: 'query required' })
+
+          const params = new URLSearchParams({ query, size: '15' })
+          const x = url.searchParams.get('x')
+          const y = url.searchParams.get('y')
+          if (x && y && Number.isFinite(Number(x)) && Number.isFinite(Number(y))) {
+            params.set('x', x)
+            params.set('y', y)
+            params.set('sort', 'distance')
+          }
+
+          const r = await fetch(`${KAKAO_KEYWORD_URL}?${params}`, {
+            headers: { Authorization: `KakaoAK ${key}` },
+          })
+          const text = await r.text()
+          res.statusCode = r.status
+          res.setHeader('Content-Type', 'application/json')
+          res.end(text)
+        } catch (e) {
+          sendJson(res, 500, { error: e instanceof Error ? e.message : 'Unknown' })
+        }
+      })
+    },
+  }
+}
+
 function localChatApi(
   geminiKey: string | undefined,
   upstashUrl: string | undefined,
@@ -327,6 +364,7 @@ export default defineConfig(({ mode }) => {
     localStockApi(env.FINNHUB_API_KEY),
     localCryptoApi(),
     localNewsApi(),
+    localPlacesApi(env.KAKAO_REST_API_KEY),
     VitePWA({
       registerType: 'autoUpdate',
       includeAssets: ['icon.svg', 'apple-touch-icon.png', 'icon-192.png', 'icon-512.png'],

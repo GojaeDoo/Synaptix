@@ -59,6 +59,7 @@ export const useDemoStore = create<DemoState>()(
               completed: input.completed ?? false,
               due_date: input.due_date,
               priority: input.priority,
+              location: input.location ?? null,
               created_at: new Date().toISOString(),
             },
             ...s.todos,

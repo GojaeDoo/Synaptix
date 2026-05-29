@@ -7,6 +7,7 @@ import { StockWidget } from '@/components/widgets/StockWidget'
 import { NewsWidget } from '@/components/widgets/NewsWidget'
 import { CalendarWidget } from '@/components/widgets/CalendarWidget'
 import { BudgetWidget } from '@/components/widgets/BudgetWidget'
+import { PlacesWidget } from '@/components/widgets/PlacesWidget'
 import { ChatbotWidget } from '@/components/widgets/ChatbotWidget'
 import { useWidgetStore, type Layouts } from '@/store/widgetStore'
 import { ErrorBoundary } from '@/components/ErrorBoundary'
@@ -86,6 +87,7 @@ export function Dashboard() {
       { key: 'calendar', node: <CalendarWidget />, visible: visibility.calendar },
       { key: 'news',     node: <NewsWidget />,     visible: visibility.news },
       { key: 'budget',   node: <BudgetWidget />,   visible: visibility.budget },
+      { key: 'places',   node: <PlacesWidget />,   visible: visibility.places },
     ]
     return all.filter((w) => w.visible)
   }, [visibility, isMobile])

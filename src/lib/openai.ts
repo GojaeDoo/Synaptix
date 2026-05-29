@@ -55,12 +55,13 @@ const SYSTEM_PROMPT_BASE = `당신은 Synaptix의 AI 어시스턴트입니다.
 사용자가 대시보드 위젯을 제어하고 데이터를 관리할 수 있도록 도와드립니다.
 
 가능한 작업:
-- 위젯 표시/숨기기 (날씨, 주식, 뉴스, 캘린더, 가계부)
+- 위젯 표시/숨기기 (날씨, 주식, 뉴스, 캘린더, 가계부, 장소)
 - 할일 추가/수정/삭제 (특정 날짜 지정 가능)
 - 수입/지출 기록/수정/삭제
 - 날씨 위젯 도시 변경
 - 다른 도시의 현재 날씨 조회 (위젯은 그대로 둠)
 - 주식 시세 조회 (위젯에 없는 종목도 가능)
+- 장소 검색 (맛집·카페·데이트 코스 등) 및 찾은 장소를 일정으로 등록
 - 사용자의 할일/거래 데이터 조회 및 요약
 
 비서 역할 (범위 밖 질문 처리):
@@ -88,6 +89,11 @@ const SYSTEM_PROMPT_BASE = `당신은 Synaptix의 AI 어시스턴트입니다.
 - 사용자가 "춘천 날씨", "도쿄 기온" 같이 다른 도시 날씨를 물으면 lookup_weather를 호출하세요. change_weather_city는 사용자가 "위젯을 OO로 바꿔줘"라고 명시했을 때만 사용합니다.
 - 한국어 도시명도 lookup_weather에 그대로 넘겨도 됩니다(예: "춘천", "Chuncheon" 둘 다 가능).
 - 주식 시세 질문은 lookup_stock을 호출하세요(예: AAPL, TSLA, NVDA, MSFT, GOOGL, AMZN, META, AMD).
+
+장소 검색·일정 등록 규칙:
+- 사용자가 "강남 맛집", "분위기 좋은 카페", "데이트 코스 추천" 같이 장소를 찾으면 search_place를 호출하세요. 결과(이름·주소·카테고리·좌표)를 받아 자연어로 2~4곳을 추천합니다.
+- 사용자가 그 장소를 일정으로 잡으려 하면("토요일에 여기 가자", "이 식당 일정 등록") add_todo를 호출하되, search_place 결과의 해당 장소 정보를 location(name, address, lat, lng, category, url)에 그대로 담고 due_date도 함께 넣으세요.
+- 좌표(lat/lng)는 반드시 search_place가 돌려준 값을 그대로 사용하세요. 임의로 지어내지 마세요. 좌표를 모르면 location 없이 제목만으로 add_todo 하세요.
 
 데이터 조회 규칙:
 - query_transactions는 month(YYYY-MM), type(income|expense), category 필터를 받을 수 있습니다. 필터를 안 주면 최근 50건이 반환됩니다.
@@ -120,7 +126,7 @@ export const CHAT_TOOLS: ChatTool[] = [
         properties: {
           widget: {
             type: 'string',
-            enum: ['weather', 'stocks', 'news', 'calendar', 'budget'],
+            enum: ['weather', 'stocks', 'news', 'calendar', 'budget', 'places'],
             description: '대상 위젯',
           },
           visible: {
@@ -149,6 +155,19 @@ export const CHAT_TOOLS: ChatTool[] = [
             type: 'string',
             enum: ['low', 'medium', 'high'],
             description: '우선순위 (기본값: medium)',
+          },
+          location: {
+            type: 'object',
+            description: 'search_place로 찾은 장소를 일정에 첨부할 때만 포함. 좌표는 search_place 결과값을 그대로 사용.',
+            properties: {
+              name: { type: 'string', description: '장소명' },
+              address: { type: 'string', description: '주소' },
+              lat: { type: 'number', description: '위도 (search_place 결과의 lat)' },
+              lng: { type: 'number', description: '경도 (search_place 결과의 lng)' },
+              category: { type: 'string', description: '카테고리 (예: 카페, 음식점)' },
+              url: { type: 'string', description: '카카오맵 상세 URL' },
+            },
+            required: ['name', 'lat', 'lng'],
           },
         },
         required: ['title'],
@@ -217,6 +236,20 @@ export const CHAT_TOOLS: ChatTool[] = [
           symbol: { type: 'string', description: '주식 심볼 (대문자, 예: AAPL)' },
         },
         required: ['symbol'],
+      },
+    },
+  },
+  {
+    type: 'function',
+    function: {
+      name: 'search_place',
+      description: '맛집·카페·관광지·데이트 코스 등 장소를 키워드로 검색합니다. 결과로 이름/주소/카테고리/좌표(lat,lng)/전화/URL을 받아 자연어로 추천하세요. 사용자가 그 장소를 일정으로 잡으려 하면 결과의 좌표를 add_todo의 location에 넘깁니다.',
+      parameters: {
+        type: 'object',
+        properties: {
+          query: { type: 'string', description: '검색 키워드 (예: "강남 파스타", "성수동 카페", "분위기 좋은 데이트 코스")' },
+        },
+        required: ['query'],
       },
     },
   },

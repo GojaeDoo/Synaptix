@@ -1,4 +1,5 @@
-import type { WeatherData, StockQuote, NewsArticle, ForecastData, ForecastSlot } from '@/types'
+import type { WeatherData, StockQuote, NewsArticle, ForecastData, ForecastSlot, Place } from '@/types'
+import { mapKakaoResponse, type KakaoPlaceDocument } from './places'
 
 // 서버 키가 설정되지 않아 프록시가 503을 돌려준 경우. 훅에서 모의 데이터로 폴백한다.
 export class ConfigError extends Error {
@@ -214,6 +215,24 @@ export async function fetchCryptos(): Promise<StockQuote[]> {
       prevClose,
     }
   })
+}
+
+// 카카오 로컬 키워드 검색. center(현재 지도 중심)를 주면 거리순 정렬됨.
+// 키 미설정 시 프록시가 503 → ConfigError → 훅에서 mock 장소로 폴백.
+export async function searchPlaces(
+  query: string,
+  center?: { lat: number; lng: number },
+): Promise<Place[]> {
+  const params = new URLSearchParams({ query })
+  if (center) {
+    params.set('x', String(center.lng))
+    params.set('y', String(center.lat))
+  }
+  const data = await fetchJson<{ documents?: KakaoPlaceDocument[] }>(
+    `/api/places?${params}`,
+    '장소 검색',
+  )
+  return mapKakaoResponse(data)
 }
 
 interface HNStory {

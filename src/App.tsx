@@ -24,6 +24,12 @@ const CalendarDetail = lazy(() =>
 const NewsDetail = lazy(() =>
   import('./pages/widgets/NewsDetail').then((m) => ({ default: m.NewsDetail }))
 )
+const PlacesDetail = lazy(() =>
+  import('./pages/widgets/PlacesDetail').then((m) => ({ default: m.PlacesDetail }))
+)
+const CourseView = lazy(() =>
+  import('./pages/CourseView').then((m) => ({ default: m.CourseView }))
+)
 
 function Spinner() {
   return (
@@ -50,6 +56,8 @@ export default function App() {
           <Route path="/widgets/stocks" element={<StocksDetail />} />
           <Route path="/widgets/calendar" element={<CalendarDetail />} />
           <Route path="/widgets/news" element={<NewsDetail />} />
+          <Route path="/widgets/places" element={<PlacesDetail />} />
+          <Route path="/course" element={<CourseView />} />
           <Route path="/login" element={session ? <Navigate to="/" replace /> : <Login />} />
           <Route path="*" element={<NotFound />} />
         </Routes>

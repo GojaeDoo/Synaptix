@@ -14,6 +14,8 @@ const PAGE_TITLES: Record<string, string> = {
   '/widgets/news':     '해커뉴스',
   '/widgets/calendar': '할 일',
   '/widgets/budget':   '가계부',
+  '/widgets/places':   '장소',
+  '/course':           '공유 코스',
 }
 
 export function TopNav() {

@@ -22,6 +22,7 @@ export const ALLOWED_TOOL_NAMES = new Set([
   'change_weather_city',
   'lookup_weather',
   'lookup_stock',
+  'search_place',
   'query_todos',
   'query_transactions',
   'update_todo',
