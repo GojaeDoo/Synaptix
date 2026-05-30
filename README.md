@@ -91,6 +91,49 @@ useTodos()
 | **뉴스** | Hacker News | 상위 스토리 + 외부 링크 |
 | **캘린더 / 할 일** | Supabase | 월별 뷰, 우선순위, 마감일, **하루 전 푸시 알림** |
 | **가계부** | Supabase | 카테고리별 파이 차트, 월별 통계 |
+| **장소 / 코스** | 카카오 로컬 검색 API + 카카오 지도 JS SDK | 키워드 지도 검색, 코스 동선 빌더, 일정 추가 |
+
+### 장소 검색 & 코스 빌더
+
+#### 장소 검색
+카카오 로컬 API로 키워드 기반 장소 검색을 제공합니다. REST 키는 Edge Function 뒤에 숨겨 클라이언트에 노출되지 않으며, 카카오 지도 JS SDK(`VITE_KAKAO_JS_KEY`)는 도메인 제한 키라 클라이언트 노출이 안전합니다.
+
+```
+사용자 입력 "강남 파스타"
+    ↓
+/api/places?query=강남+파스타&x=lng&y=lat   (Edge Function 프록시)
+    ↓ KAKAO_REST_API_KEY 헤더 추가
+카카오 /v2/local/search/keyword.json
+    ↓ 결과 매핑 (road_address_name 우선, 카테고리 정규화)
+PlaceResultList + PlaceMap (카카오 지도 JS SDK 마커)
+```
+
+- **현재 위치 기반 거리 정렬**: `useMyLocation` 훅으로 브라우저 Geolocation을 1회 조회해 `x/y` 파라미터로 전달. 좌표가 있으면 거리순, 없으면 정확도순으로 정렬됩니다.
+- **카테고리 썸네일**: 카카오 API는 사진을 반환하지 않으므로 카테고리명 기반으로 아이콘 + 컬러 썸네일을 클라이언트에서 생성합니다 (카페→갈색, 음식점→레드 등).
+- **데모 모드 폴백**: `KAKAO_REST_API_KEY` 미설정 시 서버가 503을 반환하고, 클라이언트는 서울 대표 장소 6곳의 mock 데이터로 자동 폴백합니다.
+- **지도 폴백**: `VITE_KAKAO_JS_KEY` 미설정 또는 SDK 로드 실패 시 지도 대신 리스트 뷰만 표시하며 검색·일정 기능은 그대로 동작합니다.
+
+#### 코스 빌더 (동선 편집기)
+검색 결과에서 장소를 골라 **데이트·나들이 동선**을 직접 만들 수 있습니다.
+
+```
+검색 결과 → [코스 추가] 버튼
+    ↓ useCourseStore (Zustand)
+CoursePanel — 정류장(stop) 목록
+    ↓ 각 정류장: 방문 시간, 이동 수단, 메모 편집
+지도 뷰 전환 → "내 코스" 탭
+    ↓ PlaceMap (ordered=true)
+번호 마커 + 순서대로 잇는 폴리라인
+    ↓ [공유] 버튼
+/course?data=<base64 인코딩된 JSON>  ← URL 하나로 공유
+    ↓ CourseView 페이지 (지도 + 타임라인)
+[일정으로 내보내기] → 각 stop을 Supabase Todo로 일괄 저장
+```
+
+- **Zustand 코스 스토어**: 정류장 추가/삭제/순서 변경, 시간 및 메모 편집이 Zustand로 관리되며 페이지를 이동해도 코스가 유지됩니다.
+- **폴리라인 지도 시각화**: 코스 보기 전환 시 각 정류장에 순번 마커(①②③…)를 찍고, 방문 순서대로 라인을 그려 동선을 한눈에 파악할 수 있습니다.
+- **URL 공유**: 코스 JSON을 base64로 인코딩해 URL에 담아 외부 공유가 가능합니다. 수신자는 별도 로그인 없이 공유된 코스를 지도에서 확인할 수 있습니다.
+- **일정 연동**: 코스를 캘린더 할 일로 일괄 내보내면 각 장소가 `due_date`와 `location` 메타가 붙은 Todo로 저장되어 푸시 리마인더 대상이 됩니다.
 
 ### 푸시 리마인더 (Web Push)
 홈 화면에 추가한 PWA에 **카톡처럼 백그라운드 알림**을 보냅니다. 앱을 켜두지 않아도, 화면이 꺼져 있어도 일정 하루 전 아침에 푸시가 도착합니다.
@@ -164,7 +207,9 @@ src/
 │   └── widgets/        # 위젯별 상세 페이지(*Detail.tsx) — 각 위젯은
 │       │               #   하위 폴더로 컴포넌트·상수를 분리해 얇은 오케스트레이터로 유지
 │       ├── budget/     #   예: SummaryCards, BudgetCharts, TransactionListCard, constants…
+│       ├── places/     #   PlaceMap, PlaceResultList, CoursePanel, CourseTimeline, constants…
 │       ├── weather/  calendar/  stocks/  news/
+│   ├── CourseView.tsx  # 공유 코스 조회 페이지 (/course?data=…)
 ├── hooks/              # useWeather, useTodos, useChatSend, useBudgetRange 등
 ├── store/              # widgetStore, chatStore, calendarStore, demoStore (Zustand)
 ├── lib/
@@ -211,6 +256,8 @@ npm run dev
 | `GEMINI_API_KEY` | AI 채팅 | `/api/chat` 500 |
 | `OPENWEATHER_API_KEY` | 날씨 위젯 | mock 데이터로 폴백 |
 | `FINNHUB_API_KEY` | 주식 위젯 | mock 데이터로 폴백 |
+| `KAKAO_REST_API_KEY` | 장소 키워드 검색 (서버 전용) | mock 장소 6곳으로 폴백 |
+| `VITE_KAKAO_JS_KEY` | 카카오 지도 JS SDK (클라이언트) | 지도 미표시, 리스트만 동작 |
 | `UPSTASH_REDIS_REST_URL` / `_TOKEN` | `/api/chat` rate limit | rate limit 미적용 (dev OK, prod 권장) |
 | `VITE_SUPABASE_URL` / `_ANON_KEY` | 인증·DB | dev placeholder, prod throw |
 | `VITE_SITE_URL` *(선택)* | OAuth redirect 고정 | 현재 origin 사용 |
@@ -218,6 +265,8 @@ npm run dev
 | `VAPID_PUBLIC_KEY` / `_PRIVATE_KEY` / `_SUBJECT` | 서버 푸시 발송 (web-push) | 알림 기능 비활성 |
 | `SUPABASE_SERVICE_ROLE_KEY` | Cron이 전체 사용자 일정 조회 (RLS 우회) | Cron 발송 503 |
 | `CRON_SECRET` | `/api/send-reminders` 호출자 인증 | 검증 미적용 (prod 권장) |
+
+> **카카오 지도 도메인 등록 필수**: `VITE_KAKAO_JS_KEY`는 [카카오 Developers](https://developers.kakao.com) 콘솔에서 **플랫폼 → Web → 사이트 도메인**에 배포 URL(`https://your-app.vercel.app`)을 등록해야 작동합니다. 미등록 시 지도 SDK 로드가 차단됩니다.
 
 ---
 
