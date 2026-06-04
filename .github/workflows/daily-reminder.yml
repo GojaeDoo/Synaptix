@@ -1,0 +1,25 @@
+name: Daily Push Reminder
+
+on:
+  schedule:
+    # UTC 23:00 = KST 08:00 — "내일" 일정 알림 발송
+    - cron: '0 23 * * *'
+  workflow_dispatch: # 수동 실행 허용 (테스트용)
+
+jobs:
+  send-reminders:
+    name: Send tomorrow's schedule reminders
+    runs-on: ubuntu-latest
+    timeout-minutes: 3
+
+    steps:
+      - name: Call send-reminders API
+        run: |
+          STATUS=$(curl -s -o /tmp/resp.json -w "%{http_code}" \
+            -X GET "${{ secrets.APP_URL }}/api/send-reminders" \
+            -H "Authorization: Bearer ${{ secrets.CRON_SECRET }}")
+          cat /tmp/resp.json
+          if [ "$STATUS" -ne 200 ]; then
+            echo "::error::API returned $STATUS"
+            exit 1
+          fi
