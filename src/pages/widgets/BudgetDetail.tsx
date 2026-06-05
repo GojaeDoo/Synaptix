@@ -3,12 +3,14 @@ import { Plus } from 'lucide-react'
 import { WidgetDetailLayout } from '@/layouts/WidgetDetailLayout'
 import { useTransactions } from '@/hooks/useTransactions'
 import { useBudgetRange } from '@/hooks/useBudgetRange'
+import { useBudgetGoals } from '@/hooks/useBudgetGoals'
 import { cn } from '@/lib/utils'
 import { filterByRange, summarize, computeTrend, trendTitle as makeTrendTitle, computePie } from '@/lib/budget'
 import { RangePickerBar } from './budget/RangePickerBar'
 import { RangePickerPopover } from './budget/RangePickerPopover'
 import { TransactionFormCard } from './budget/TransactionFormCard'
 import { SummaryCards } from './budget/SummaryCards'
+import { BudgetGoals } from './budget/BudgetGoals'
 import { BudgetCharts } from './budget/BudgetCharts'
 import { TransactionListCard } from './budget/TransactionListCard'
 import { EditTransactionModal } from './budget/EditTransactionModal'
@@ -23,6 +25,7 @@ export function BudgetDetail() {
     deleteTransaction,
   } = useTransactions()
   const range = useBudgetRange()
+  const { goals, setGoal, removeGoal } = useBudgetGoals()
 
   const [open, setOpen] = useState(false)
   const [editingId, setEditingId] = useState<string | null>(null)
@@ -35,6 +38,14 @@ export function BudgetDetail() {
     [txns, range.rangeMode, range.anchor, range.range],
   )
   const pieData = useMemo(() => computePie(rangeTxns), [rangeTxns])
+
+  const spendingByCategory = useMemo(() => {
+    const map: Record<string, number> = {}
+    for (const t of rangeTxns) {
+      if (t.type === 'expense') map[t.category] = (map[t.category] ?? 0) + t.amount
+    }
+    return map
+  }, [rangeTxns])
   const trendTitle = makeTrendTitle(range.rangeMode, range.anchor)
 
   const editingTxn = txns.find((t) => t.id === editingId) ?? null
@@ -79,6 +90,12 @@ export function BudgetDetail() {
       )}
 
       <SummaryCards income={income} expense={expense} balance={balance} />
+      <BudgetGoals
+        spending={spendingByCategory}
+        goals={goals}
+        onSetGoal={setGoal}
+        onRemoveGoal={removeGoal}
+      />
       <BudgetCharts trendTitle={trendTitle} trendData={trendData} pieData={pieData} expense={expense} />
       <TransactionListCard
         rangeTxns={rangeTxns}

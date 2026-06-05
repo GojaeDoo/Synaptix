@@ -31,6 +31,22 @@ export function courseSpan(course: Course): { start: string; end: string } | nul
   return { start: sorted[0].startTime, end: sorted[sorted.length - 1].endTime }
 }
 
+// 첫 stop 시작 ~ 마지막 stop 종료까지의 총 분. stop이 없으면 0.
+export function courseTotalMinutes(course: Course): number {
+  if (course.stops.length === 0) return 0
+  const sorted = sortStops(course.stops)
+  return timeToMinutes(sorted[sorted.length - 1].endTime) - timeToMinutes(sorted[0].startTime)
+}
+
+// 분 → "N시간 M분" 포맷 (0분이면 빈 문자열)
+export function formatMinutes(mins: number): string {
+  if (mins <= 0) return ''
+  const h = Math.floor(mins / 60)
+  const m = mins % 60
+  if (h === 0) return `${m}분`
+  return m > 0 ? `${h}시간 ${m}분` : `${h}시간`
+}
+
 // ── 공유 링크 인코딩 ──────────────────────────────────────────
 // URL을 짧게 유지하려고 짧은 키로 압축한다. (st=start, et=end, m=memo,
 // n=name, a=address, y=lat, x=lng, c=category, u=url)

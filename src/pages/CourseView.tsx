@@ -3,7 +3,7 @@ import { useSearchParams, useNavigate } from 'react-router-dom'
 import { Route, Download, MapPinned } from 'lucide-react'
 import { WidgetDetailLayout } from '@/layouts/WidgetDetailLayout'
 import { useCourseStore } from '@/store/courseStore'
-import { decodeCourse, courseSpan } from '@/lib/course'
+import { decodeCourse, courseSpan, courseTotalMinutes, formatMinutes } from '@/lib/course'
 import { PlaceMap } from './widgets/places/PlaceMap'
 import { CourseTimeline } from './widgets/places/CourseTimeline'
 import { ACCENT } from './widgets/places/constants'
@@ -37,6 +37,7 @@ export function CourseView() {
   }
 
   const span = courseSpan(course)
+  const totalLabel = formatMinutes(courseTotalMinutes(course))
   const points = course.stops.map((s) => ({ lat: s.location.lat, lng: s.location.lng, name: s.location.name }))
 
   const importCourse = () => {
@@ -48,7 +49,7 @@ export function CourseView() {
     <WidgetDetailLayout
       title={course.title}
       kicker="COURSE"
-      subtitle={[course.date, span ? `${span.start}–${span.end}` : null, `${course.stops.length}곳`].filter(Boolean).join(' · ')}
+      subtitle={[course.date, span ? `${span.start}–${span.end}` : null, `${course.stops.length}곳`, totalLabel ? `총 ${totalLabel}` : null].filter(Boolean).join(' · ')}
       accent={ACCENT}
       actions={
         <button

@@ -6,6 +6,14 @@ import { useNavigate } from 'react-router-dom'
 import { useTodos } from '@/hooks/useTodos'
 import { useCalendarStore } from '@/store/calendarStore'
 import { cn } from '@/lib/utils'
+import type { Todo } from '@/types'
+
+const PRIORITY_COLOR: Record<Todo['priority'], string> = {
+  high: '#FF453A',
+  medium: '#FFB74D',
+  low: '#60A5FA',
+}
+const PRIORITY_RANK: Record<Todo['priority'], number> = { high: 2, medium: 1, low: 0 }
 
 const PIXEL = "'Press Start 2P', monospace"
 const BG = 'rgba(38, 38, 38, 0.72)'
@@ -36,10 +44,13 @@ export function CalendarWidget() {
   const days = eachDayOfInterval({ start: startOfMonth(month), end: endOfMonth(month) })
   const pad = getDay(startOfMonth(month))
 
+  // 날짜별 미완료 할일 목록 (우선순위 도트 표시용)
   const todosByDate = useMemo(() => {
-    const map: Record<string, number> = {}
+    const map: Record<string, Todo[]> = {}
     for (const t of todos) {
-      if (t.due_date && !t.completed) map[t.due_date] = (map[t.due_date] ?? 0) + 1
+      if (t.due_date && !t.completed) {
+        map[t.due_date] = [...(map[t.due_date] ?? []), t]
+      }
     }
     return map
   }, [todos])
@@ -165,7 +176,11 @@ export function CalendarWidget() {
               const iso = format(day, 'yyyy-MM-dd')
               const today = isToday(day)
               const selected = selectedDate === iso
-              const count = todosByDate[iso] ?? 0
+              const dayTodos = todosByDate[iso] ?? []
+              // 최대 3개 도트, 우선순위 높은 순 정렬
+              const dots = [...dayTodos]
+                .sort((a, b) => PRIORITY_RANK[b.priority] - PRIORITY_RANK[a.priority])
+                .slice(0, 3)
               return (
                 <button
                   key={day.toISOString()}
@@ -183,18 +198,20 @@ export function CalendarWidget() {
                   onMouseLeave={(e) => { if (!today && !selected) e.currentTarget.style.background = 'transparent' }}
                 >
                   <span>{format(day, 'd')}</span>
-                  {count > 0 && (
-                    <div
-                      style={{
-                        position: 'absolute',
-                        bottom: 4,
-                        width: 4,
-                        height: 4,
-                        borderRadius: '50%',
-                        background: today ? '#ffffff' : '#3182F6',
-                      }}
-                      title={`${count}개 할일`}
-                    />
+                  {dots.length > 0 && (
+                    <div className="absolute flex gap-0.5" style={{ bottom: 4 }}>
+                      {dots.map((t, i) => (
+                        <div
+                          key={i}
+                          className="rounded-full"
+                          style={{
+                            width: 4,
+                            height: 4,
+                            background: today ? '#ffffff' : PRIORITY_COLOR[t.priority],
+                          }}
+                        />
+                      ))}
+                    </div>
                   )}
                 </button>
               )
