@@ -2,9 +2,9 @@
 
 # Synaptix
 
-**AI 기반 개인 대시보드 — 날씨 · 주식 · 뉴스 · 할 일 · 가계부를 한 화면에서**
+**AI 기반 개인 대시보드 — 날씨 · 주식 · 뉴스 · 할 일 · 가계부 · GitHub를 한 화면에서**
 
-자연어로 위젯을 조작하고, 드래그로 레이아웃을 바꾸고, 데이터는 본인 계정에 안전하게 저장됩니다.
+자연어(텍스트 또는 **음성**)로 위젯을 조작하고, 드래그로 레이아웃을 바꾸고, 데이터는 본인 계정에 안전하게 저장됩니다.
 
 [![CI](https://github.com/GojaeDoo/Synaptix/actions/workflows/ci.yml/badge.svg)](https://github.com/GojaeDoo/Synaptix/actions/workflows/ci.yml)
 
@@ -27,7 +27,7 @@
 | **Backend** | Supabase (Postgres + Row Level Security + Google OAuth) |
 | **Serverless** | Vercel Edge Functions (Gemini · 외부 API 프록시) |
 | **Rate Limit** | Upstash Redis (sliding window) |
-| **외부 API** | OpenWeatherMap, Finnhub, CoinGecko, Hacker News |
+| **외부 API** | OpenWeatherMap, Finnhub, CoinGecko, Hacker News, GitHub GraphQL |
 | **PWA** | vite-plugin-pwa (오프라인 캐시, 홈 추가, **Web Push 알림**) |
 | **푸시 알림** | Web Push (VAPID) + `web-push` + Vercel Cron (일정 하루 전 발송) |
 | **검증** | Zod (LLM tool args 런타임 검증) |
@@ -70,6 +70,24 @@ LLM이 잘못된 형식의 인자를 줄 가능성을 막기 위해 **Zod로 런
 
 채팅은 **모든 페이지에서** 열립니다 — 모바일은 하단 시트, 데스크톱은 상단 네비의 `AI` 버튼으로 여는 우측 드로어. 무료 모델(Gemini Flash) 비용을 위해 API로 보내는 대화 히스토리는 최근 N개로 캡합니다(화면에는 전체 유지).
 
+### AI 음성 입력 (Web Speech API)
+
+마이크 버튼 하나로 **말로 AI에게 명령**할 수 있습니다.
+
+```
+마이크 버튼 탭 → 픽셀 도트 웨이브 애니메이션 + "듣고 있습니다..."
+    ↓ 말하는 동안 실시간으로 인식 텍스트가 입력창에 반영
+더듬거나 잠깐 쉬어도 계속 듣는 중 (continuous mode)
+    ↓ 버튼 다시 탭 → 인식 완료, 입력창에서 내용 확인 후 전송
+```
+
+- **`continuous: true`** — 짧은 침묵에 중단되지 않아 자연스럽게 말할 수 있습니다
+- **수동 전송** — 말이 끝나도 자동 전송하지 않아 인식 오류를 수정할 시간을 줍니다
+- **픽셀 도트 웨이브** — 앱의 도트풍 디자인에 맞게 24개 픽셀 도트가 파도치는 애니메이션
+- **실시간 미리보기** — 인식되는 텍스트를 즉시 확인해 오인식 여부를 바로 파악
+- **에러 안내** — 마이크 권한 거부 / 말소리 미감지 / 인식 실패 상황별 메시지
+- **미지원 브라우저 자동 숨김** — `SpeechRecognition` 미지원 환경(Firefox 등)에서는 마이크 버튼이 표시되지 않습니다
+
 ### 데모 모드 — 가입 없이 풀 기능 체험
 포트폴리오 방문자가 회원가입 벽 앞에서 이탈하지 않도록 로그인을 **필수가 아니게** 설계했습니다. 같은 React Query 훅(`useTodos`, `useTransactions`)이 세션 유무를 보고 데이터 백엔드를 동적으로 라우팅합니다.
 
@@ -92,6 +110,27 @@ useTodos()
 | **캘린더 / 할 일** | Supabase | 월별 뷰, 우선순위, 마감일, **하루 전 푸시 알림** |
 | **가계부** | Supabase | 카테고리별 파이 차트, 월별 통계 |
 | **장소 / 코스** | 카카오 로컬 검색 API + 카카오 지도 JS SDK | 키워드 지도 검색, 코스 동선 빌더, 일정 추가 |
+| **GitHub** | GitHub GraphQL API | 1년치 잔디(기여 그래프), 총 기여수, 연속 스트릭 |
+
+### GitHub 잔디 위젯
+
+개발자 포트폴리오에 어울리는 **GitHub 기여 그래프 위젯**입니다.
+
+```
+GitHub GraphQL API (/api/github Edge Function)
+    ↓ GITHUB_TOKEN으로 1년치 contributionCalendar 조회
+    ↓ Cache-Control: max-age=3600 (CDN 캐시)
+GithubWidget
+    ├─ 기여 그래프 — 52주 × 7일 SVG 그리드 (블루 컬러 스케일)
+    ├─ 총 기여수 (contributions)
+    ├─ 연속 스트릭 (streak) — 오늘 기준 연속 커밋일 수
+    └─ 클릭 시 GitHub 프로필 열기
+```
+
+- **블루 컬러 스케일** — 기여 횟수에 따라 4단계 투명도 (`rgba(49,130,246,0.22)` → `#3182F6`)로 앱 테마와 일치
+- **반응형 SVG** — `viewBox`로 위젯 크기에 따라 자동 스케일
+- **`GITHUB_TOKEN` 미설정 시** — "SETUP REQUIRED" 안내 화면으로 폴백, 앱 전체에 영향 없음
+- **AI 제어 가능** — `"github 위젯 보여줘"` 명령으로 표시/숨기기
 
 ### 장소 검색 & 코스 빌더
 
@@ -182,10 +221,10 @@ CoursePanel — 정류장(stop) 목록
             │                                  │
             ▼                                  ▼
    ┌────────────────────┐         ┌──────────────────────┐
-   │  /api/chat (Edge)  │         │  /api/weather etc.   │
-   │  Gemini 프록시 +   │         │  외부 API 프록시 +    │
-   │  키 격리 + 재시도 +│         │  Edge 캐시           │
-   │  Upstash rate-lim  │         │                      │
+   │  /api/chat (Edge)  │         │  /api/weather,stock  │
+   │  Gemini 프록시 +   │         │  crypto,news,github  │
+   │  키 격리 + 재시도 +│         │  외부 API 프록시 +    │
+   │  Upstash rate-lim  │         │  Edge 캐시           │
    └────────────────────┘         └──────────────────────┘
                                   ┌──────────────────────┐
                                   │  Supabase            │
@@ -210,7 +249,7 @@ src/
 │       ├── places/     #   PlaceMap, PlaceResultList, CoursePanel, CourseTimeline, constants…
 │       ├── weather/  calendar/  stocks/  news/
 │   ├── CourseView.tsx  # 공유 코스 조회 페이지 (/course?data=…)
-├── hooks/              # useWeather, useTodos, useChatSend, useBudgetRange 등
+├── hooks/              # useWeather, useTodos, useChatSend, useBudgetRange, useGithub 등
 ├── store/              # widgetStore, chatStore, calendarStore, demoStore (Zustand)
 ├── lib/
 │   ├── api.ts          # 외부 API 클라이언트 (+ api.test.ts)
@@ -230,6 +269,7 @@ api/
 ├── stock.ts            # Finnhub 프록시
 ├── crypto.ts           # CoinGecko 프록시 (Cache-Control)
 ├── news.ts             # HackerNews fan-out 프록시 (Cache-Control)
+├── github.ts           # GitHub GraphQL 프록시 (GITHUB_TOKEN, Cache-Control 1h)
 └── send-reminders.ts   # 일정 하루 전 푸시 발송 (Vercel Cron, Node 런타임)
 ```
 
@@ -265,6 +305,7 @@ npm run dev
 | `VAPID_PUBLIC_KEY` / `_PRIVATE_KEY` / `_SUBJECT` | 서버 푸시 발송 (web-push) | 알림 기능 비활성 |
 | `SUPABASE_SERVICE_ROLE_KEY` | Cron이 전체 사용자 일정 조회 (RLS 우회) | Cron 발송 503 |
 | `CRON_SECRET` | `/api/send-reminders` 호출자 인증 | 검증 미적용 (prod 권장) |
+| `GITHUB_TOKEN` | GitHub 잔디 위젯 (GraphQL API, `read:user` scope) | 위젯 "SETUP REQUIRED" 안내 표시 |
 
 > **카카오 지도 도메인 등록 필수**: `VITE_KAKAO_JS_KEY`는 [카카오 Developers](https://developers.kakao.com) 콘솔에서 **플랫폼 → Web → 사이트 도메인**에 배포 URL(`https://your-app.vercel.app`)을 등록해야 작동합니다. 미등록 시 지도 SDK 로드가 차단됩니다.
 
@@ -276,7 +317,33 @@ npm run dev
 평소 노션·구글캘린더·증권 앱·날씨 앱을 매일 번갈아 가며 켜는 게 불편했습니다. "한 화면에 다 보여주는 대시보드"는 이미 많지만, 거기에 **자연어로 직접 상태를 바꿀 수 있는** AI 어시스턴트가 붙으면 어떨까 궁금했어요. 동시에 LLM의 Function Calling, Vercel Edge Functions, Supabase RLS 같이 한 번도 깊이 다뤄보지 못한 기술들을 한 프로젝트에 묶어보고 싶었습니다.
 
 ### 처음 시작할 때의 고민
-가장 큰 고민은 **"LLM이 정말로 내 앱의 상태를 안전하게 바꿀 수 있을까"** 였습니다. LLM이 잘못된 인자를 주거나, 존재하지 않는 도구를 호출하거나, 사용자가 의도하지 않은 명령으로 해석할 가능성이 무서웠어요. 결국 LLM 출력을 "신뢰할 수 없는 입력"으로 다루기로 결정하고, 모든 tool 호출 경계에서 Zod 런타임 검증을 거치도록 설계한 게 첫 번째 큰 결정이었습니다.
+
+#### 0. Next.js에서 Vite로 마이그레이션한 이유
+
+이 프로젝트는 처음에 **Next.js App Router** 기반으로 시작했습니다. Next.js는 현재 프론트엔드 생태계의 사실상 표준이고, 파일 기반 라우팅과 서버 컴포넌트가 편리했습니다. 그러나 기능을 붙여가면서 **Next.js의 장점이 이 앱에서는 거의 발휘되지 않는다**는 걸 체감했고, 결국 Vite + React SPA로 전환했습니다.
+
+**Next.js를 떠난 핵심 이유**
+
+| Next.js 장점 | 이 앱에서의 현실 |
+| --- | --- |
+| SSR/SSG로 SEO 최적화 | 로그인 기반 개인 대시보드 — 검색 엔진에 노출될 페이지가 없음 |
+| 서버 컴포넌트로 초기 로드 최적화 | 모든 데이터가 Supabase·외부 API에서 실시간으로 오므로 서버에서 pre-render할 정적 데이터가 없음 |
+| 파일 기반 라우팅 | React Router v6의 `lazy()` 코드 스플리팅으로 충분히 대체 가능 |
+
+결정적으로 위젯 대부분이 `Geolocation`, `Kakao Map JS SDK`, `Web Push`, `SpeechRecognition` 등 **브라우저 전용 API**에 의존합니다. Next.js App Router를 쓰더라도 거의 모든 컴포넌트에 `'use client'`를 달아야 했고, 서버 컴포넌트의 이점을 전혀 누리지 못하면서 Next.js 특유의 복잡도(hydration, 서버/클라이언트 경계 관리)만 떠안는 상황이었습니다.
+
+**Vite로 전환하면서 얻은 것**
+
+- `/api/*.ts` Vercel Edge Function 구조를 그대로 유지 — Next.js의 `app/api/route.ts` 포맷으로 변환할 필요 없음
+- HMR 속도 향상과 번들 설정 단순화
+- `vite-plugin-pwa`로 PWA·서비스워커 통합이 훨씬 직관적
+- 클라이언트 헤비한 SPA에 최적화된 구조로 코드베이스가 단순해짐
+
+**결론**: "좋은 기술"과 "이 앱에 맞는 기술"은 다릅니다. Next.js가 더 유명하고 포트폴리오에 보기 좋아 보이더라도, 실제로 그 강점이 발휘되지 않는 앱에 억지로 끼워 맞추는 건 오히려 복잡도만 늘린다는 걸 직접 경험했습니다.
+
+---
+
+가장 큰 고민은 **"LLM이 정말로 내 앱의 상태를 안전하게 바꿀 수 있을까"** 였습니다. LLM이 잘못된 인자를 주거나, 존재하지 않는 도구를 호출하거나, 사용자가 의도하지 않은 명령으로 해석할 가능성이 무서웠습니다. 결국 LLM 출력을 "신뢰할 수 없는 입력"으로 다루기로 결정하고, 모든 tool 호출 경계에서 Zod 런타임 검증을 거치도록 설계한 게 첫 번째 큰 결정이었습니다.
 
 두 번째 고민은 **"로그인 강제 vs 가입 없이 둘러보기"** 였습니다. 포트폴리오로 공개할 거라면 방문자가 가입 화면에서 이탈하는 비용이 크다고 판단해, 같은 React Query 훅이 세션 유무에 따라 Supabase와 localStorage 사이를 동적으로 라우팅하도록 구조를 짰습니다.
 
@@ -347,7 +414,8 @@ OpenWeather가 다운되면 위젯이 깨지는 게 아니라 mock 데이터로 
 ### 앞으로의 계획
 - **테스트 커버리지** — 위젯 순수 로직(budget/weather/stocks/news/todos)과 검증기는 단위 테스트 완료. 남은 `useChatSend` tool routing과 컴포넌트/E2E 테스트를 보강할 예정
 - **에러 모니터링** — Sentry/PostHog 연동해 production에서 발생하는 에러를 실시간으로 추적
-- **위젯 확장성** — 사용자가 자신만의 위젯을 정의할 수 있도록 플러그인 시스템 검토
+- **위젯 설정 패널** — 각 위젯별 세밀한 설정(기상 단위 ℃/℉, 주식 통화, GitHub 유저네임 변경 등) UI 추가
+- **대시보드 레이아웃 프리셋** — 여러 레이아웃 저장/전환 기능 (현재 1개만 저장)
 - **LLM 응답 캐싱** — 같은 질문이 반복될 때 prompt cache로 비용·응답 시간 절감
 - **접근성 (a11y)** — 키보드 네비게이션, 스크린 리더 호환성 강화
 

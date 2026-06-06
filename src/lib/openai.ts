@@ -126,7 +126,7 @@ export const CHAT_TOOLS: ChatTool[] = [
         properties: {
           widget: {
             type: 'string',
-            enum: ['weather', 'stocks', 'news', 'calendar', 'budget', 'places'],
+            enum: ['weather', 'stocks', 'news', 'calendar', 'budget', 'places', 'github'],
             description: '대상 위젯',
           },
           visible: {

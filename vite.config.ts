@@ -11,6 +11,29 @@ import { validateChatPayload } from './api/_chat-validation'
 const GEMINI_URL = 'https://generativelanguage.googleapis.com/v1beta/openai/chat/completions'
 const MODEL = 'gemini-2.5-flash'
 
+const GITHUB_GRAPHQL = 'https://api.github.com/graphql'
+const GITHUB_QUERY = `
+query($username: String!, $from: DateTime!, $to: DateTime!) {
+  user(login: $username) {
+    name
+    login
+    avatarUrl
+    contributionsCollection(from: $from, to: $to) {
+      contributionCalendar {
+        totalContributions
+        weeks {
+          contributionDays {
+            contributionCount
+            date
+            weekday
+          }
+        }
+      }
+    }
+  }
+}
+`
+
 const WEATHER_BASE = 'https://api.openweathermap.org/data/2.5'
 const GEO_BASE = 'https://api.openweathermap.org/geo/1.0'
 const FINNHUB_BASE = 'https://finnhub.io/api/v1'
@@ -231,6 +254,50 @@ function localPlacesApi(key: string | undefined): PluginOption {
   }
 }
 
+function localGithubApi(token: string | undefined): PluginOption {
+  return {
+    name: 'local-github-api',
+    configureServer(server) {
+      server.middlewares.use('/api/github', async (req, res, next) => {
+        if (req.method !== 'GET') return next()
+        if (!token) return sendJson(res, 503, { error: 'not-configured' })
+        try {
+          const url = new URL(req.url ?? '', 'http://localhost')
+          const username = url.searchParams.get('username')?.trim()
+          if (!username) return sendJson(res, 400, { error: 'username required' })
+          if (!/^[a-zA-Z0-9][a-zA-Z0-9-]{0,38}$/.test(username)) {
+            return sendJson(res, 400, { error: 'invalid username' })
+          }
+
+          const to = new Date()
+          const from = new Date(to.getFullYear() - 1, to.getMonth(), to.getDate())
+
+          const r = await fetch(GITHUB_GRAPHQL, {
+            method: 'POST',
+            headers: {
+              Authorization: `bearer ${token}`,
+              'Content-Type': 'application/json',
+              'User-Agent': 'Synaptix',
+            },
+            body: JSON.stringify({
+              query: GITHUB_QUERY,
+              variables: { username, from: from.toISOString(), to: to.toISOString() },
+            }),
+          })
+
+          const data = await r.json() as { data?: { user: unknown }; errors?: { message: string }[] }
+          if (data.errors?.length) return sendJson(res, 400, { error: data.errors[0]?.message ?? 'GitHub API error' })
+          if (!data.data?.user) return sendJson(res, 404, { error: 'user not found' })
+
+          sendJson(res, 200, data.data.user)
+        } catch (e) {
+          sendJson(res, 500, { error: e instanceof Error ? e.message : 'Unknown' })
+        }
+      })
+    },
+  }
+}
+
 function localChatApi(
   geminiKey: string | undefined,
   upstashUrl: string | undefined,
@@ -365,6 +432,7 @@ export default defineConfig(({ mode }) => {
     localCryptoApi(),
     localNewsApi(),
     localPlacesApi(env.KAKAO_REST_API_KEY),
+    localGithubApi(env.GITHUB_TOKEN),
     VitePWA({
       registerType: 'autoUpdate',
       includeAssets: ['icon.svg', 'apple-touch-icon.png', 'icon-192.png', 'icon-512.png'],

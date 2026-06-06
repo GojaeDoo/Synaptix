@@ -21,7 +21,47 @@ import { courseSpan, courseTotalMinutes, formatMinutes, encodeCourse } from '@/l
 import { CARD_BG, BORDER, ACCENT, fieldStyle } from './constants'
 import type { CourseStop } from '@/types'
 
-const timeFieldStyle = { ...fieldStyle, height: 32, width: 96, padding: '0 6px', fontSize: 13 }
+// 네이티브 time picker를 유지하면서 한국어 "오전/오후" 포맷 대신 24h "HH:MM" 으로 표시
+function TimeField({ value, onChange, label }: { value: string; onChange: (v: string) => void; label: string }) {
+  return (
+    <div style={{ position: 'relative', display: 'flex', alignItems: 'center', height: 32, flex: 1, minWidth: 0 }}>
+      <div
+        style={{
+          height: 32,
+          display: 'flex',
+          alignItems: 'center',
+          padding: '0 12px',
+          background: 'rgba(255,255,255,0.05)',
+          border: '1px solid rgba(255,255,255,0.1)',
+          borderRadius: 10,
+          flex: 1,
+          minWidth: 0,
+          pointerEvents: 'none',
+        }}
+      >
+        <span style={{ fontSize: 14, fontWeight: 600, color: value ? '#F2F2F7' : '#48484A', letterSpacing: '0.04em', fontVariantNumeric: 'tabular-nums' }}>
+          {value || '--:--'}
+        </span>
+      </div>
+      <input
+        type="time"
+        value={value}
+        onChange={(e) => onChange(e.target.value)}
+        aria-label={label}
+        style={{
+          position: 'absolute',
+          inset: 0,
+          width: '100%',
+          height: '100%',
+          opacity: 0,
+          cursor: 'pointer',
+          border: 'none',
+          background: 'none',
+        }}
+      />
+    </div>
+  )
+}
 
 interface SortableStopProps {
   stop: CourseStop
@@ -77,31 +117,27 @@ function SortableStop({ stop, index, isLast, onUpdate, onRemove }: SortableStopP
           </p>
         </div>
 
-        <div className="flex items-center gap-2 flex-wrap">
+        <div className="flex items-center gap-2">
           <Clock size={13} className="text-[#636366] shrink-0" />
-          <input
-            type="time"
+          <TimeField
             value={stop.startTime}
-            onChange={(e) => onUpdate(stop.id, { startTime: e.target.value })}
-            aria-label="시작 시간"
-            style={timeFieldStyle}
+            onChange={(v) => onUpdate(stop.id, { startTime: v })}
+            label="시작 시간"
           />
-          <span className="text-[#636366]">–</span>
-          <input
-            type="time"
+          <span className="text-[#636366] shrink-0 text-sm">–</span>
+          <TimeField
             value={stop.endTime}
-            onChange={(e) => onUpdate(stop.id, { endTime: e.target.value })}
-            aria-label="종료 시간"
-            style={timeFieldStyle}
-          />
-          <input
-            value={stop.memo}
-            onChange={(e) => onUpdate(stop.id, { memo: e.target.value })}
-            placeholder="메모 (예: 데이트, 식사)"
-            aria-label="메모"
-            style={{ ...fieldStyle, height: 32, flex: 1, minWidth: 120, fontSize: 13 }}
+            onChange={(v) => onUpdate(stop.id, { endTime: v })}
+            label="종료 시간"
           />
         </div>
+        <input
+          value={stop.memo}
+          onChange={(e) => onUpdate(stop.id, { memo: e.target.value })}
+          placeholder="메모 (예: 데이트, 식사)"
+          aria-label="메모"
+          style={{ ...fieldStyle, height: 32, fontSize: 13, width: '100%' }}
+        />
       </div>
 
       {/* 삭제 */}

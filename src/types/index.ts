@@ -121,6 +121,7 @@ export interface ChatMessage {
 export interface WidgetSettings {
   weatherCity: string
   stockSymbols: string[]
+  githubUsername: string
 }
 
-export type WidgetKey = 'weather' | 'stocks' | 'news' | 'calendar' | 'budget' | 'places'
+export type WidgetKey = 'weather' | 'stocks' | 'news' | 'calendar' | 'budget' | 'places' | 'github'

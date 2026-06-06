@@ -12,7 +12,7 @@ import type { Todo, Transaction, Place } from '@/types'
 // LLM이 spec과 다른 인자를 줄 수 있으므로 모든 경계에서 Zod 런타임 검증을 거치고,
 // 실패 시 throw 대신 tool error 메시지로 돌려 LLM이 사용자에게 재질문하도록 유도한다.
 
-const WidgetKeySchema = z.enum(['weather', 'stocks', 'news', 'calendar', 'budget', 'places'])
+const WidgetKeySchema = z.enum(['weather', 'stocks', 'news', 'calendar', 'budget', 'places', 'github'])
 
 // search_place가 돌려준 좌표를 그대로 받아 일정에 첨부한다.
 const PlaceLocationSchema = z.object({

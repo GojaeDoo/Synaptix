@@ -232,3 +232,9 @@ body {
 .rgl-editing .react-grid-item.react-draggable-dragging .widget-edit-wobble {
   animation: none;
 }
+
+/* 음성 입력 애니메이션 */
+@keyframes dot-wave {
+  0%, 100% { transform: translateY(0)    scale(0.75); opacity: 0.3; }
+  50%       { transform: translateY(-14px) scale(1);   opacity: 1;   }
+}
