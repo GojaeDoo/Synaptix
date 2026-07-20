@@ -124,4 +124,15 @@ export interface WidgetSettings {
   githubUsername: string
 }
 
-export type WidgetKey = 'weather' | 'stocks' | 'news' | 'calendar' | 'budget' | 'places' | 'github'
+export type WidgetKey = 'weather' | 'stocks' | 'news' | 'calendar' | 'budget' | 'places' | 'github' | 'bookmarks'
+
+export type BookmarkCategory = '뉴스' | '레시피' | '영상' | '기타'
+
+export interface Bookmark {
+  id: string
+  title: string
+  url: string
+  category: BookmarkCategory
+  memo?: string
+  created_at: string
+}
