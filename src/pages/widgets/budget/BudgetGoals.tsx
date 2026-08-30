@@ -1,7 +1,8 @@
 import { useState } from 'react'
 import { Pencil, Check, X, Target } from 'lucide-react'
 import { formatKRW } from '@/lib/utils'
-import { CARD_BG, BORDER, CAT_COLOR, EXP_CATS } from './constants'
+import { useCategories } from '@/hooks/useCategories'
+import { CARD_BG, BORDER, getCategoryColor } from './constants'
 
 interface Props {
   spending: Record<string, number>   // 카테고리별 현재 지출 합계
@@ -22,7 +23,7 @@ function GoalRow({ category, spent, goal, onSetGoal, onRemoveGoal }: RowProps) {
   const [editing, setEditing] = useState(false)
   const [input, setInput] = useState(goal != null ? String(goal) : '')
 
-  const color = CAT_COLOR[category] ?? '#8E8E93'
+  const color = getCategoryColor(category)
   const pct = goal != null && goal > 0 ? Math.min((spent / goal) * 100, 100) : null
   const over = goal != null && spent > goal
 
@@ -130,8 +131,10 @@ function GoalRow({ category, spent, goal, onSetGoal, onRemoveGoal }: RowProps) {
 }
 
 export function BudgetGoals({ spending, goals, onSetGoal, onRemoveGoal }: Props) {
-  // 지출이 있거나 목표가 설정된 카테고리만 표시
-  const activeCategories = EXP_CATS.filter((c) => (spending[c] ?? 0) > 0 || goals[c] != null)
+  const { categories } = useCategories()
+  // 지출이 있거나 목표가 설정된 카테고리만 표시 (카테고리 목록 + 실제 지출/목표에만 남은 카테고리 포함)
+  const allExpCats = [...new Set([...categories.expense, ...Object.keys(spending), ...Object.keys(goals)])]
+  const activeCategories = allExpCats.filter((c) => (spending[c] ?? 0) > 0 || goals[c] != null)
 
   if (activeCategories.length === 0) return null
 

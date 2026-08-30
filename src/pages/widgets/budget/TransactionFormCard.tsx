@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { format } from 'date-fns'
-import { CARD_BG, BORDER, EXP_CATS, INC_CATS, fieldStyle, type TxFormValues } from './constants'
+import { CARD_BG, BORDER, fieldStyle, type TxFormValues } from './constants'
+import { CategorySelect } from './CategorySelect'
 
 // 수입/지출 추가 폼. 열릴 때마다 새로 마운트되므로 초기 상태가 곧 리셋이다.
 export function TransactionFormCard({ onAdd }: { onAdd: (values: TxFormValues) => void }) {
@@ -50,17 +51,11 @@ export function TransactionFormCard({ onAdd }: { onAdd: (values: TxFormValues) =
           onChange={(e) => setForm((f) => ({ ...f, amount: e.target.value }))}
           style={fieldStyle}
         />
-        <select
+        <CategorySelect
+          type={form.type}
           value={form.category}
-          onChange={(e) => setForm((f) => ({ ...f, category: e.target.value }))}
-          style={{ ...fieldStyle, cursor: 'pointer' }}
-        >
-          {(form.type === 'expense' ? EXP_CATS : INC_CATS).map((c) => (
-            <option key={c} value={c} style={{ background: '#141730' }}>
-              {c}
-            </option>
-          ))}
-        </select>
+          onChange={(category) => setForm((f) => ({ ...f, category }))}
+        />
         <input
           placeholder="내용"
           value={form.description}

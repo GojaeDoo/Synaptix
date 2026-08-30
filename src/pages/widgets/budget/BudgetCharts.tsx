@@ -11,7 +11,7 @@ import {
 } from 'recharts'
 import { formatKRW } from '@/lib/utils'
 import type { TrendPoint, PieSlice } from '@/lib/budget'
-import { CARD_BG, BORDER, CAT_COLOR } from './constants'
+import { CARD_BG, BORDER, getCategoryColor } from './constants'
 
 interface Props {
   trendTitle: string
@@ -88,7 +88,7 @@ export function BudgetCharts({ trendTitle, trendData, pieData, expense }: Props)
                     stroke={CARD_BG}
                   >
                     {pieData.map((e) => (
-                      <Cell key={e.name} fill={CAT_COLOR[e.name] ?? '#52525B'} />
+                      <Cell key={e.name} fill={getCategoryColor(e.name)} />
                     ))}
                   </Pie>
                   <Tooltip
@@ -110,7 +110,7 @@ export function BudgetCharts({ trendTitle, trendData, pieData, expense }: Props)
                   <div className="flex items-center gap-2 min-w-0">
                     <div
                       className="w-2 h-2 rounded-full shrink-0"
-                      style={{ background: CAT_COLOR[d.name] ?? '#52525B' }}
+                      style={{ background: getCategoryColor(d.name) }}
                     />
                     <span className="truncate" style={{ color: '#AEAEB2' }}>
                       {d.name}

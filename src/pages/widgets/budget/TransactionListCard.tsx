@@ -8,7 +8,7 @@ import {
   type SortMode,
 } from '@/lib/budget'
 import type { Transaction } from '@/types'
-import { CARD_BG, BORDER, CAT_COLOR, fieldStyle } from './constants'
+import { CARD_BG, BORDER, getCategoryColor, fieldStyle } from './constants'
 
 interface Props {
   rangeTxns: Transaction[]
@@ -127,11 +127,11 @@ export function TransactionListCard({ rangeTxns, isLoading, onEdit, onDelete }: 
               >
                 <div
                   className="w-9 h-9 rounded-full shrink-0 flex items-center justify-center"
-                  style={{ background: `${CAT_COLOR[t.category] ?? '#52525B'}25` }}
+                  style={{ background: `${getCategoryColor(t.category)}25` }}
                 >
                   <div
                     className="w-2.5 h-2.5 rounded-full"
-                    style={{ background: CAT_COLOR[t.category] ?? '#52525B' }}
+                    style={{ background: getCategoryColor(t.category) }}
                   />
                 </div>
                 <div className="flex-1 min-w-0">

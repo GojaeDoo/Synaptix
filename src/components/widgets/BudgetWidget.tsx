@@ -7,18 +7,12 @@ import { useNavigate } from 'react-router-dom'
 import { useTransactions } from '@/hooks/useTransactions'
 import { useCalendarStore } from '@/store/calendarStore'
 import { cn, formatKRW, formatDate } from '@/lib/utils'
+import { getCategoryColor } from '@/pages/widgets/budget/constants'
+import { CategorySelect } from '@/pages/widgets/budget/CategorySelect'
 
 const PIXEL = "'Press Start 2P', monospace"
 const BG = 'rgba(38, 38, 38, 0.72)'
 const BORDER = 'rgba(255,255,255,0.07)'
-
-const CAT_COLOR: Record<string, string> = {
-  식비: '#FF6B6B', 교통: '#FFD93D', 쇼핑: '#C084FC',
-  '문화/여가': '#60A5FA', 통신: '#34D399', 의료: '#FB923C',
-  급여: '#4ADE80', 부수입: '#A3E635', 기타: '#52525B',
-}
-const EXP_CATS = ['식비', '교통', '쇼핑', '문화/여가', '통신', '의료', '기타']
-const INC_CATS = ['급여', '부수입', '기타']
 
 function PixelCoin({ style }: { style: React.CSSProperties }) {
   return (
@@ -217,14 +211,11 @@ export function BudgetWidget() {
                   onChange={(e) => setForm((f) => ({ ...f, amount: e.target.value }))}
                   aria-label="금액 (원)"
                   style={{ ...fieldStyle }} />
-                <select value={form.category}
-                  onChange={(e) => setForm((f) => ({ ...f, category: e.target.value }))}
-                  aria-label="카테고리"
-                  style={{ ...fieldStyle, cursor: 'pointer' }}>
-                  {(form.type === 'expense' ? EXP_CATS : INC_CATS).map((c) => (
-                    <option key={c} value={c} style={{ background: '#141730' }}>{c}</option>
-                  ))}
-                </select>
+                <CategorySelect
+                  type={form.type}
+                  value={form.category}
+                  onChange={(category) => setForm((f) => ({ ...f, category }))}
+                />
               </div>
               <div className="grid grid-cols-2 gap-3">
                 <input placeholder="내용" value={form.description}
@@ -256,7 +247,7 @@ export function BudgetWidget() {
                 <ResponsiveContainer width="100%" height="100%">
                   <PieChart>
                     <Pie data={pieData} cx="50%" cy="50%" innerRadius={38} outerRadius={62} dataKey="value" strokeWidth={2} stroke="#141730">
-                      {pieData.map((e) => <Cell key={e.name} fill={CAT_COLOR[e.name] ?? '#52525B'} />)}
+                      {pieData.map((e) => <Cell key={e.name} fill={getCategoryColor(e.name)} />)}
                     </Pie>
                     <Tooltip
                       contentStyle={{ background: '#222222', border: `1px solid ${BORDER}`, borderRadius: 12, fontSize: 12, color: '#F2F2F7', padding: '8px 12px' }}
@@ -269,7 +260,7 @@ export function BudgetWidget() {
                 {pieData.slice(0, 5).map((d) => (
                   <div key={d.name} className="flex items-center justify-between gap-2">
                     <div className="flex items-center gap-2 min-w-0">
-                      <div className="w-2 h-2 rounded-full shrink-0" style={{ background: CAT_COLOR[d.name] ?? '#52525B' }} />
+                      <div className="w-2 h-2 rounded-full shrink-0" style={{ background: getCategoryColor(d.name) }} />
                       <span style={{ fontSize: 12, color: '#8E8E93' }} className="truncate">{d.name}</span>
                     </div>
                     <span style={{ fontSize: 12, color: '#636366' }}>
@@ -315,8 +306,8 @@ export function BudgetWidget() {
                   onMouseLeave={(e) => (e.currentTarget.style.background = 'transparent')}
                 >
                   <div className="w-8 h-8 rounded-full shrink-0 flex items-center justify-center"
-                    style={{ background: `${CAT_COLOR[t.category] ?? '#52525B'}25` }}>
-                    <div className="w-2.5 h-2.5 rounded-full" style={{ background: CAT_COLOR[t.category] ?? '#52525B' }} />
+                    style={{ background: `${getCategoryColor(t.category)}25` }}>
+                    <div className="w-2.5 h-2.5 rounded-full" style={{ background: getCategoryColor(t.category) }} />
                   </div>
                   <div className="flex-1 min-w-0">
                     <p style={{ fontSize: 13, color: '#AEAEB2', fontWeight: 500 }} className="truncate leading-snug">{t.description}</p>

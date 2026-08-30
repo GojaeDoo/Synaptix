@@ -1,7 +1,8 @@
 import { useState } from 'react'
 import { X } from 'lucide-react'
 import type { Transaction } from '@/types'
-import { CARD_BG, BORDER, EXP_CATS, INC_CATS, fieldStyle, type TxFormValues } from './constants'
+import { CARD_BG, BORDER, fieldStyle, type TxFormValues } from './constants'
+import { CategorySelect } from './CategorySelect'
 
 interface Props {
   transaction: Transaction
@@ -87,17 +88,11 @@ export function EditTransactionModal({ transaction, onClose, onSave }: Props) {
             onChange={(e) => setForm((f) => ({ ...f, amount: e.target.value }))}
             style={fieldStyle}
           />
-          <select
+          <CategorySelect
+            type={form.type}
             value={form.category}
-            onChange={(e) => setForm((f) => ({ ...f, category: e.target.value }))}
-            style={{ ...fieldStyle, cursor: 'pointer' }}
-          >
-            {(form.type === 'expense' ? EXP_CATS : INC_CATS).map((c) => (
-              <option key={c} value={c} style={{ background: '#141730' }}>
-                {c}
-              </option>
-            ))}
-          </select>
+            onChange={(category) => setForm((f) => ({ ...f, category }))}
+          />
           <input
             placeholder="내용"
             value={form.description}

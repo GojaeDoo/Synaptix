@@ -16,8 +16,18 @@ export const CAT_COLOR: Record<string, string> = {
   기타: '#52525B',
 }
 
-export const EXP_CATS = ['식비', '교통', '쇼핑', '문화/여가', '통신', '의료', '기타']
-export const INC_CATS = ['급여', '부수입', '기타']
+export const DEFAULT_EXP_CATS = ['식비', '교통', '쇼핑', '문화/여가', '통신', '의료', '기타']
+export const DEFAULT_INC_CATS = ['급여', '부수입', '기타']
+
+// 사용자가 직접 추가한 카테고리는 CAT_COLOR에 없으므로, 이름을 해시해 고정 색을 배정한다.
+const FALLBACK_COLORS = ['#3182F6', '#F59E0B', '#EC4899', '#10B981', '#8B5CF6', '#EF4444', '#06B6D4']
+
+export function getCategoryColor(category: string): string {
+  if (CAT_COLOR[category]) return CAT_COLOR[category]
+  let hash = 0
+  for (let i = 0; i < category.length; i++) hash = (hash * 31 + category.charCodeAt(i)) >>> 0
+  return FALLBACK_COLORS[hash % FALLBACK_COLORS.length]
+}
 
 export interface TxFormValues {
   type: 'income' | 'expense'
